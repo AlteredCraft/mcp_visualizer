@@ -1,0 +1,1224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCP Inspector - Actor-Based Timeline</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        .app-header {
+            background: #1e293b;
+            color: white;
+            padding: 10px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+
+        .app-title {
+            font-size: 15px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .recording-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid #ef4444;
+            border-radius: 12px;
+            font-size: 12px;
+        }
+
+        .recording-dot {
+            width: 6px;
+            height: 6px;
+            background: #ef4444;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Main Timeline Container */
+        .timeline-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: white;
+            overflow: hidden;
+        }
+
+        /* Timeline Header - 5 columns */
+        .timeline-header {
+            display: grid;
+            grid-template-columns: 20% 15% 15% 15% 35%;
+            border-bottom: 2px solid #d1d5db;
+            background: #f8f9fa;
+            flex-shrink: 0;
+        }
+
+        .timeline-header > div {
+            padding: 12px 16px;
+            font-weight: 600;
+            font-size: 14px;
+            color: #333;
+            border-right: 2px solid #d1d5db;
+            text-align: center;
+        }
+
+        .timeline-header > div:last-child {
+            border-right: none;
+        }
+
+        /* Timeline Content */
+        .timeline-content {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        /* Timeline Row - 5 columns */
+        .timeline-row {
+            display: grid;
+            grid-template-columns: 20% 15% 15% 15% 35%;
+            min-height: 60px;
+            border-bottom: 1px solid #e5e7eb;
+            position: relative;
+            transition: background 0.2s;
+        }
+
+        .timeline-row:hover {
+            background: #f9fafb;
+        }
+
+        .timeline-row.selected {
+            background: #eff6ff;
+            border-left: 3px solid #2563eb;
+        }
+
+        /* Group Headers - spans all 5 columns */
+        .timeline-group {
+            display: grid;
+            grid-template-columns: 20% 15% 15% 15% 35%;
+            background: #f3f4f6;
+            border-top: 2px solid #d1d5db;
+            border-bottom: 1px solid #d1d5db;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .timeline-group .group-content {
+            grid-column: 1 / -1;
+            padding: 8px 16px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: #6b7280;
+            letter-spacing: 0.5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .group-timing {
+            background: white;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-weight: normal;
+            text-transform: none;
+            font-size: 11px;
+        }
+
+        /* Actor Columns (Host App, LLM, MCP Server) */
+        .actor-cell {
+            padding: 12px;
+            border-right: 2px solid #d1d5db;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .actor-cell.empty {
+            /* Empty cell when no activity */
+        }
+
+        /* Communication Lane Columns */
+        .comm-lane {
+            padding: 12px 8px;
+            border-right: 2px solid #d1d5db;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .comm-lane.empty {
+            /* Empty when no messages */
+        }
+
+        .comm-lane:last-child {
+            border-right: none;
+        }
+
+        /* Chat Bubbles in Host App Column */
+        .chat-bubble {
+            padding: 8px 12px;
+            border-radius: 12px;
+            font-size: 13px;
+            line-height: 1.4;
+            max-width: 95%;
+        }
+
+        .chat-bubble.user {
+            background: #2563eb;
+            color: white;
+            margin-left: auto;
+        }
+
+        .chat-bubble.assistant {
+            background: #f0f0f0;
+            color: #333;
+            margin-right: auto;
+        }
+
+        /* Console Blocks in Actor Columns */
+        .console-block {
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 11px;
+            color: #374151;
+            background: #f9fafb;
+            padding: 6px 8px;
+            border-radius: 4px;
+            border-left: 3px solid #e5e7eb;
+        }
+
+        .console-block .console-time {
+            color: #9ca3af;
+            font-size: 10px;
+            margin-right: 6px;
+        }
+
+        .console-block .console-badge {
+            display: inline-block;
+            padding: 1px 5px;
+            border-radius: 3px;
+            font-size: 9px;
+            font-weight: bold;
+            margin-right: 6px;
+        }
+
+        .console-badge.internal {
+            background: #f3f4f6;
+            color: #6b7280;
+        }
+
+        .console-badge.system {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .console-badge.log {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .console-badge.llm {
+            background: #e0e7ff;
+            color: #3730a3;
+        }
+
+        .console-badge.server {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        /* Thinking Indicators in LLM Column */
+        .thinking-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #6b7280;
+            font-size: 12px;
+            font-style: italic;
+            padding: 8px;
+        }
+
+        .thinking-dots {
+            display: flex;
+            gap: 3px;
+        }
+
+        .thinking-dots span {
+            width: 6px;
+            height: 6px;
+            background: #9ca3af;
+            border-radius: 50%;
+            animation: thinking 1.4s infinite;
+        }
+
+        .thinking-dots span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .thinking-dots span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes thinking {
+            0%, 60%, 100% { opacity: 0.3; transform: scale(0.8); }
+            30% { opacity: 1; transform: scale(1); }
+        }
+
+        /* Message Cards in Communication Lanes */
+        .message-card {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 10px 12px;
+            width: 100%;
+            max-width: 100%;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .message-card:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .message-card.request {
+            border-left: 4px solid #10b981;
+        }
+
+        .message-card.response {
+            border-right: 4px solid #3b82f6;
+        }
+
+        .message-card.notification {
+            border-left: 4px solid #8b5cf6;
+        }
+
+        .message-badge {
+            position: absolute;
+            top: -8px;
+            left: 12px;
+            background: white;
+            padding: 0 6px;
+            font-size: 9px;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: #6b7280;
+        }
+
+        .message-method {
+            font-weight: 600;
+            font-size: 12px;
+            color: #1f2937;
+            margin-bottom: 4px;
+        }
+
+        .message-details {
+            font-size: 10px;
+            color: #6b7280;
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .message-id {
+            background: #f3f4f6;
+            padding: 1px 5px;
+            border-radius: 3px;
+        }
+
+        .message-timing {
+            color: #10b981;
+        }
+
+        .message-arrow {
+            font-weight: bold;
+        }
+
+        .expand-btn {
+            display: inline-block;
+            margin-top: 6px;
+            padding: 3px 8px;
+            background: #ede9fe;
+            color: #7c3aed;
+            border-radius: 4px;
+            font-size: 10px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .message-card.expanded .expand-btn {
+            background: #7c3aed;
+            color: white;
+        }
+
+        .message-payload {
+            margin-top: 8px;
+            padding: 10px;
+            background: #1e1e1e;
+            color: #d4d4d4;
+            border-radius: 4px;
+            overflow-x: auto;
+            display: none;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 10px;
+            line-height: 1.5;
+        }
+
+        .message-card.expanded .message-payload {
+            display: block;
+        }
+
+        /* JSON Syntax Highlighting */
+        .json-key { color: #9cdcfe; }
+        .json-string { color: #ce9178; }
+        .json-number { color: #b5cea8; }
+        .json-boolean { color: #569cd6; }
+
+        /* Chat Input Row */
+        .chat-input-row {
+            display: grid;
+            grid-template-columns: 20% 15% 15% 15% 35%;
+            border-top: 2px solid #d1d5db;
+            background: white;
+            flex-shrink: 0;
+        }
+
+        .chat-input-cell {
+            padding: 12px;
+            border-right: 2px solid #d1d5db;
+            display: flex;
+            gap: 8px;
+        }
+
+        .chat-input-cell input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            outline: none;
+            font-size: 13px;
+        }
+
+        .chat-input-cell button {
+            padding: 8px 16px;
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        .empty-input-cell {
+            border-right: 2px solid #d1d5db;
+        }
+
+        .empty-input-cell:last-child {
+            border-right: none;
+        }
+
+        /* Status Bar */
+        .status-bar {
+            height: 30px;
+            background: #2c2c2c;
+            color: #ccc;
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            font-size: 12px;
+            gap: 20px;
+            flex-shrink: 0;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            background: #4caf50;
+            border-radius: 50%;
+        }
+    </style>
+</head>
+<body>
+    <!-- App Header -->
+    <div class="app-header">
+        <div class="app-title">
+            🔍 MCP Inspector - Actor-Based Timeline
+        </div>
+        <div class="recording-badge">
+            <div class="recording-dot"></div>
+            <span>Recording Timeline</span>
+        </div>
+    </div>
+
+    <!-- Timeline Container -->
+    <div class="timeline-container">
+        <!-- Timeline Header -->
+        <div class="timeline-header">
+            <div>Host App</div>
+            <div>Host ↔ LLM</div>
+            <div>LLM</div>
+            <div>Host ↔ MCP</div>
+            <div>MCP Server</div>
+        </div>
+
+        <!-- Timeline Content -->
+        <div class="timeline-content">
+            <!-- Row 1: User Message -->
+            <div class="timeline-row">
+                <div class="actor-cell">
+                    <div class="chat-bubble user">
+                        What's the weather like today?
+                    </div>
+                </div>
+                <div class="comm-lane empty"></div>
+                <div class="actor-cell empty"></div>
+                <div class="comm-lane empty"></div>
+                <div class="actor-cell empty"></div>
+            </div>
+
+            <!-- Row 2: Host App Internal -->
+            <div class="timeline-row">
+                <div class="actor-cell">
+                    <div class="console-block">
+                        <span class="console-time">14:23:00.100</span>
+                        <span class="console-badge internal">USER INPUT</span>
+                        User message received, processing...
+                    </div>
+                </div>
+                <div class="comm-lane empty"></div>
+                <div class="actor-cell empty"></div>
+                <div class="comm-lane empty"></div>
+                <div class="actor-cell empty"></div>
+            </div>
+
+            <!-- Group: Initialization -->
+            <div class="timeline-group">
+                <div class="group-content">
+                    <span>━━━━━━━━━━ PHASE 1: Initialization & Negotiation ━━━━━━━━━━</span>
+                    <span class="group-timing">36ms</span>
+                </div>
+            </div>
+
+            <!-- Row 3: Initialize Request -->
+            <div class="timeline-row">
+                <div class="actor-cell">
+                    <div class="console-block">
+                        <span class="console-time">14:23:01.234</span>
+                        <span class="console-badge system">SYSTEM</span>
+                        Connecting to MCP Server...
+                    </div>
+                </div>
+                <div class="comm-lane empty"></div>
+                <div class="actor-cell empty"></div>
+                <div class="comm-lane">
+                    <div class="message-card request" onclick="toggleCard(this)">
+                        <span class="message-badge">REQUEST</span>
+                        <div class="message-method">initialize</div>
+                        <div class="message-details">
+                            <span class="message-id">#1</span>
+                            <span class="message-arrow">→</span>
+                            <span>Server</span>
+                        </div>
+                        <div class="expand-btn">{ }</div>
+                        <div class="message-payload">
+                            <pre>{
+  <span class="json-key">"jsonrpc"</span>: <span class="json-string">"2.0"</span>,
+  <span class="json-key">"id"</span>: <span class="json-number">1</span>,
+  <span class="json-key">"method"</span>: <span class="json-string">"initialize"</span>,
+  <span class="json-key">"params"</span>: {
+    <span class="json-key">"protocolVersion"</span>: <span class="json-string">"1.0.0"</span>,
+    <span class="json-key">"capabilities"</span>: {
+      <span class="json-key">"tools"</span>: <span class="json-boolean">true</span>
+    }
+  }
+}</pre>
+                        </div>
+                    </div>
+                </div>
+                <div class="actor-cell">
+                    <div class="console-block">
+                        <span class="console-time">14:23:01.234</span>
+                        <span class="console-badge server">SERVER</span>
+                        Received initialize request
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row 4: Initialize Response -->
+            <div class="timeline-row">
+                <div class="actor-cell">
+                    <div class="console-block">
+                        <span class="console-time">14:23:01.267</span>
+                        <span class="console-badge system">SYSTEM</span>
+                        Received server capabilities
+                    </div>
+                </div>
+                <div class="comm-lane empty"></div>
+                <div class="actor-cell empty"></div>
+                <div class="comm-lane">
+                    <div class="message-card response" onclick="toggleCard(this)">
+                        <span class="message-badge">RESPONSE</span>
+                        <div class="message-method">initialize</div>
+                        <div class="message-details">
+                            <span class="message-id">#1</span>
+                            <span class="message-arrow">←</span>
+                            <span>Server</span>
+                            <span class="message-timing">33ms</span>
+                        </div>
+                        <div class="expand-btn">{ }</div>
+                        <div class="message-payload">
+                            <pre>{
+  <span class="json-key">"jsonrpc"</span>: <span class="json-string">"2.0"</span>,
+  <span class="json-key">"id"</span>: <span class="json-number">1</span>,
+  <span class="json-key">"result"</span>: {
+    <span class="json-key">"protocolVersion"</span>: <span class="json-string">"1.0.0"</span>,
+    <span class="json-key">"serverInfo"</span>: {
+      <span class="json-key">"name"</span>: <span class="json-string">"weather-server"</span>,
+      <span class="json-key">"version"</span>: <span class="json-string">"1.0.0"</span>
+    }
+  }
+}</pre>
+                        </div>
+                    </div>
+                </div>
+                <div class="actor-cell">
+                    <div class="console-block">
+                        <span class="console-time">14:23:01.267</span>
+                        <span class="console-badge server">SERVER</span>
+                        Sent capabilities to client
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row 5: Initialized Notification -->
+            <div class="timeline-row">
+                <div class="actor-cell">
+                    <div class="console-block">
+                        <span class="console-time">14:23:01.270</span>
+                        <span class="console-badge system">SYSTEM</span>
+                        Handshake complete
+                    </div>
+                </div>
+                <div class="comm-lane empty"></div>
+                <div class="actor-cell empty"></div>
+                <div class="comm-lane">
+                    <div class="message-card notification" onclick="toggleCard(this)">
+                        <span class="message-badge">NOTIFY</span>
+                        <div class="message-method">initialized</div>
+                        <div class="message-details">
+                            <span class="message-arrow">→</span>
+                            <span>Server</span>
+                        </div>
+                        <div class="expand-btn">{ }</div>
+                        <div class="message-payload">
+                            <pre>{
+  <span class="json-key">"jsonrpc"</span>: <span class="json-string">"2.0"</span>,
+  <span class="json-key">"method"</span>: <span class="json-string">"initialized"</span>
+}</pre>
+                        </div>
+                    </div>
+                </div>
+                <div class="actor-cell">
+                    <div class="console-block">
+                        <span class="console-time">14:23:01.270</span>
+                        <span class="console-badge server">SERVER</span>
+                        Client ready for operations
+                    </div>
+                </div>
+            </div>
+
+            <!-- Group: Discovery -->
+            <div class="timeline-group">
+                <div class="group-content">
+                    <span>━━━━━━━━━━ PHASE 2: Discovery & Contextualization ━━━━━━━━━━</span>
+                    <span class="group-timing">15ms</span>
+                </div>
+            </div>
+
+            <!-- Row 6: Tools List Request -->
+            <div class="timeline-row">
+                <div class="actor-cell">
+                    <div class="console-block">
+                        <span class="console-time">14:23:02.100</span>
+                        <span class="console-badge system">SYSTEM</span>
+                        Requesting available tools
+                    </div>
+                </div>
+                <div class="comm-lane empty"></div>
+                <div class="actor-cell empty"></div>
+                <div class="comm-lane">
+                    <div class="message-card request" onclick="toggleCard(this)">
+                        <span class="message-badge">REQUEST</span>
+                        <div class="message-method">tools/list</div>
+                        <div class="message-details">
+                            <span class="message-id">#2</span>
+                            <span class="message-arrow">→</span>
+                            <span>Server</span>
+                        </div>
+                        <div class="expand-btn">{ }</div>
+                        <div class="message-payload">
+                            <pre>{
+  <span class="json-key">"jsonrpc"</span>: <span class="json-string">"2.0"</span>,
+  <span class="json-key">"id"</span>: <span class="json-number">2</span>,
+  <span class="json-key">"method"</span>: <span class="json-string">"tools/list"</span>
+}</pre>
+                        </div>
+                    </div>
+                </div>
+                <div class="actor-cell">
+                    <div class="console-block">
+                        <span class="console-time">14:23:02.100</span>
+                        <span class="console-badge server">SERVER</span>
+                        Received tools/list request
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row 7: Tools List Response -->
+            <div class="timeline-row">
+                <div class="actor-cell">
+                    <div class="console-block">
+                        <span class="console-time">14:23:02.115</span>
+                        <span class="console-badge system">SYSTEM</span>
+                        Received tool schemas
+                    </div>
+                </div>
+                <div class="comm-lane empty"></div>
+                <div class="actor-cell empty"></div>
+                <div class="comm-lane">
+                    <div class="message-card response" onclick="toggleCard(this)">
+                        <span class="message-badge">RESPONSE</span>
+                        <div class="message-method">tools/list</div>
+                        <div class="message-details">
+                            <span class="message-id">#2</span>
+                            <span class="message-arrow">←</span>
+                            <span>Server</span>
+                            <span class="message-timing">15ms</span>
+                        </div>
+                        <div class="expand-btn">{ }</div>
+                        <div class="message-payload">
+                            <pre>{
+  <span class="json-key">"jsonrpc"</span>: <span class="json-string">"2.0"</span>,
+  <span class="json-key">"id"</span>: <span class="json-number">2</span>,
+  <span class="json-key">"result"</span>: {
+    <span class="json-key">"tools"</span>: [{
+      <span class="json-key">"name"</span>: <span class="json-string">"get_weather"</span>,
+      <span class="json-key">"description"</span>: <span class="json-string">"Get current weather for a location"</span>,
+      <span class="json-key">"inputSchema"</span>: {
+        <span class="json-key">"type"</span>: <span class="json-string">"object"</span>,
+        <span class="json-key">"properties"</span>: {
+          <span class="json-key">"location"</span>: { <span class="json-key">"type"</span>: <span class="json-string">"string"</span> }
+        }
+      }
+    }]
+  }
+}</pre>
+                        </div>
+                    </div>
+                </div>
+                <div class="actor-cell">
+                    <div class="console-block">
+                        <span class="console-time">14:23:02.115</span>
+                        <span class="console-badge server">SERVER</span>
+                        Sent tool definitions
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row 8: Format tools for LLM -->
+            <div class="timeline-row">
+                <div class="actor-cell">
+                    <div class="console-block">
+                        <span class="console-time">14:23:02.120</span>
+                        <span class="console-badge internal">INTERNAL</span>
+                        Formatting tool schemas for LLM context
+                    </div>
+                </div>
+                <div class="comm-lane empty"></div>
+                <div class="actor-cell empty"></div>
+                <div class="comm-lane empty"></div>
+                <div class="actor-cell empty"></div>
+            </div>
+
+            <!-- Group: Model-Driven Selection -->
+            <div class="timeline-group">
+                <div class="group-content">
+                    <span>━━━━━━━━━━ PHASE 3: Model-Driven Selection ━━━━━━━━━━</span>
+                    <span class="group-timing">180ms</span>
+                </div>
+            </div>
+
+            <!-- Row 9: First LLM Inference (Planning) -->
+            <div class="timeline-row">
+                <div class="actor-cell">
+                    <div class="console-block">
+                        <span class="console-time">14:23:02.150</span>
+                        <span class="console-badge system">SYSTEM</span>
+                        Calling LLM for tool planning
+                    </div>
+                </div>
+                <div class="comm-lane">
+                    <div class="message-card request" onclick="toggleCard(this)">
+                        <span class="message-badge">REQUEST</span>
+                        <div class="message-method">generate()</div>
+                        <div class="message-details">
+                            <span class="message-arrow">→</span>
+                            <span>First Inference</span>
+                        </div>
+                        <div class="expand-btn">{ }</div>
+                        <div class="message-payload">
+                            <pre>{
+  <span class="json-key">"messages"</span>: [
+    {
+      <span class="json-key">"role"</span>: <span class="json-string">"user"</span>,
+      <span class="json-key">"content"</span>: <span class="json-string">"What's the weather like today?"</span>
+    }
+  ],
+  <span class="json-key">"tools"</span>: [
+    {
+      <span class="json-key">"name"</span>: <span class="json-string">"get_weather"</span>,
+      <span class="json-key">"description"</span>: <span class="json-string">"Get current weather for a location"</span>
+    }
+  ]
+}</pre>
+                        </div>
+                    </div>
+                </div>
+                <div class="actor-cell">
+                    <div class="console-block">
+                        <span class="console-time">14:23:02.150</span>
+                        <span class="console-badge llm">LLM</span>
+                        Received prompt with tool schemas
+                    </div>
+                </div>
+                <div class="comm-lane empty"></div>
+                <div class="actor-cell empty"></div>
+            </div>
+
+            <!-- Row 10: LLM Processing -->
+            <div class="timeline-row">
+                <div class="actor-cell empty"></div>
+                <div class="comm-lane empty"></div>
+                <div class="actor-cell">
+                    <div class="thinking-indicator">
+                        <div class="thinking-dots">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                        <span>Analyzing available tools...</span>
+                    </div>
+                </div>
+                <div class="comm-lane empty"></div>
+                <div class="actor-cell empty"></div>
+            </div>
+
+            <!-- Row 11: LLM Returns Tool Call -->
+            <div class="timeline-row">
+                <div class="actor-cell">
+                    <div class="console-block">
+                        <span class="console-time">14:23:02.300</span>
+                        <span class="console-badge system">SYSTEM</span>
+                        LLM returned tool_calls object
+                    </div>
+                </div>
+                <div class="comm-lane">
+                    <div class="message-card response" onclick="toggleCard(this)">
+                        <span class="message-badge">RESPONSE</span>
+                        <div class="message-method">tool_calls</div>
+                        <div class="message-details">
+                            <span class="message-arrow">←</span>
+                            <span>LLM Response</span>
+                            <span class="message-timing">150ms</span>
+                        </div>
+                        <div class="expand-btn">{ }</div>
+                        <div class="message-payload">
+                            <pre>{
+  <span class="json-key">"tool_calls"</span>: [
+    {
+      <span class="json-key">"id"</span>: <span class="json-string">"call_abc123"</span>,
+      <span class="json-key">"type"</span>: <span class="json-string">"function"</span>,
+      <span class="json-key">"function"</span>: {
+        <span class="json-key">"name"</span>: <span class="json-string">"get_weather"</span>,
+        <span class="json-key">"arguments"</span>: <span class="json-string">"{\"location\":\"San Francisco\"}"</span>
+      }
+    }
+  ]
+}</pre>
+                        </div>
+                    </div>
+                </div>
+                <div class="actor-cell">
+                    <div class="console-block">
+                        <span class="console-time">14:23:02.300</span>
+                        <span class="console-badge llm">LLM</span>
+                        Decided to call get_weather tool
+                    </div>
+                </div>
+                <div class="comm-lane empty"></div>
+                <div class="actor-cell empty"></div>
+            </div>
+
+            <!-- Group: Tool Execution -->
+            <div class="timeline-group">
+                <div class="group-content">
+                    <span>━━━━━━━━━━ PHASE 4: Execution Round Trip ━━━━━━━━━━</span>
+                    <span class="group-timing">540ms</span>
+                </div>
+            </div>
+
+            <!-- Row 12: Tool Call Request -->
+            <div class="timeline-row">
+                <div class="actor-cell">
+                    <div class="console-block">
+                        <span class="console-time">14:23:02.350</span>
+                        <span class="console-badge system">SYSTEM</span>
+                        Invoking get_weather via MCP
+                    </div>
+                </div>
+                <div class="comm-lane empty"></div>
+                <div class="actor-cell empty"></div>
+                <div class="comm-lane">
+                    <div class="message-card request" onclick="toggleCard(this)">
+                        <span class="message-badge">REQUEST</span>
+                        <div class="message-method">tools/call</div>
+                        <div class="message-details">
+                            <span class="message-id">#3</span>
+                            <span>get_weather</span>
+                        </div>
+                        <div class="expand-btn">{ }</div>
+                        <div class="message-payload">
+                            <pre>{
+  <span class="json-key">"jsonrpc"</span>: <span class="json-string">"2.0"</span>,
+  <span class="json-key">"id"</span>: <span class="json-number">3</span>,
+  <span class="json-key">"method"</span>: <span class="json-string">"tools/call"</span>,
+  <span class="json-key">"params"</span>: {
+    <span class="json-key">"name"</span>: <span class="json-string">"get_weather"</span>,
+    <span class="json-key">"arguments"</span>: {
+      <span class="json-key">"location"</span>: <span class="json-string">"San Francisco"</span>
+    }
+  }
+}</pre>
+                        </div>
+                    </div>
+                </div>
+                <div class="actor-cell">
+                    <div class="console-block">
+                        <span class="console-time">14:23:02.350</span>
+                        <span class="console-badge server">SERVER</span>
+                        Received tools/call request
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row 13: Server Calls External API -->
+            <div class="timeline-row">
+                <div class="actor-cell empty"></div>
+                <div class="comm-lane empty"></div>
+                <div class="actor-cell empty"></div>
+                <div class="comm-lane empty"></div>
+                <div class="actor-cell">
+                    <div class="console-block">
+                        <span class="console-time">14:23:02.380</span>
+                        <span class="console-badge log">LOG</span>
+                        Fetching weather data from API...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row 14: External API Response -->
+            <div class="timeline-row">
+                <div class="actor-cell empty"></div>
+                <div class="comm-lane empty"></div>
+                <div class="actor-cell empty"></div>
+                <div class="comm-lane empty"></div>
+                <div class="actor-cell">
+                    <div class="console-block">
+                        <span class="console-time">14:23:02.850</span>
+                        <span class="console-badge log">LOG</span>
+                        Weather API responded with 200 OK
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row 15: Tool Call Response -->
+            <div class="timeline-row">
+                <div class="actor-cell">
+                    <div class="console-block">
+                        <span class="console-time">14:23:02.890</span>
+                        <span class="console-badge system">SYSTEM</span>
+                        Received weather data from MCP
+                    </div>
+                </div>
+                <div class="comm-lane empty"></div>
+                <div class="actor-cell empty"></div>
+                <div class="comm-lane">
+                    <div class="message-card response" onclick="toggleCard(this)">
+                        <span class="message-badge">RESPONSE</span>
+                        <div class="message-method">tools/call</div>
+                        <div class="message-details">
+                            <span class="message-id">#3</span>
+                            <span class="message-arrow">←</span>
+                            <span>Server</span>
+                            <span class="message-timing">540ms</span>
+                        </div>
+                        <div class="expand-btn">{ }</div>
+                        <div class="message-payload">
+                            <pre>{
+  <span class="json-key">"jsonrpc"</span>: <span class="json-string">"2.0"</span>,
+  <span class="json-key">"id"</span>: <span class="json-number">3</span>,
+  <span class="json-key">"result"</span>: {
+    <span class="json-key">"content"</span>: [{
+      <span class="json-key">"type"</span>: <span class="json-string">"text"</span>,
+      <span class="json-key">"text"</span>: <span class="json-string">"Temperature: 72°F, Conditions: sunny, Humidity: 65%, Wind: 8mph"</span>
+    }],
+    <span class="json-key">"isError"</span>: <span class="json-boolean">false</span>
+  }
+}</pre>
+                        </div>
+                    </div>
+                </div>
+                <div class="actor-cell">
+                    <div class="console-block">
+                        <span class="console-time">14:23:02.890</span>
+                        <span class="console-badge server">SERVER</span>
+                        Sent tool result
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row 16: Append to Context -->
+            <div class="timeline-row">
+                <div class="actor-cell">
+                    <div class="console-block">
+                        <span class="console-time">14:23:02.900</span>
+                        <span class="console-badge internal">INTERNAL</span>
+                        Appending tool result to conversation
+                    </div>
+                </div>
+                <div class="comm-lane empty"></div>
+                <div class="actor-cell empty"></div>
+                <div class="comm-lane empty"></div>
+                <div class="actor-cell empty"></div>
+            </div>
+
+            <!-- Group: Synthesis -->
+            <div class="timeline-group">
+                <div class="group-content">
+                    <span>━━━━━━━━━━ PHASE 5: Synthesis & Final Response ━━━━━━━━━━</span>
+                    <span class="group-timing">200ms</span>
+                </div>
+            </div>
+
+            <!-- Row 17: Second LLM Inference (Synthesis) -->
+            <div class="timeline-row">
+                <div class="actor-cell">
+                    <div class="console-block">
+                        <span class="console-time">14:23:02.950</span>
+                        <span class="console-badge system">SYSTEM</span>
+                        Calling LLM for final synthesis
+                    </div>
+                </div>
+                <div class="comm-lane">
+                    <div class="message-card request" onclick="toggleCard(this)">
+                        <span class="message-badge">REQUEST</span>
+                        <div class="message-method">generate()</div>
+                        <div class="message-details">
+                            <span class="message-arrow">→</span>
+                            <span>Second Inference</span>
+                        </div>
+                        <div class="expand-btn">{ }</div>
+                        <div class="message-payload">
+                            <pre>{
+  <span class="json-key">"messages"</span>: [
+    {
+      <span class="json-key">"role"</span>: <span class="json-string">"user"</span>,
+      <span class="json-key">"content"</span>: <span class="json-string">"What's the weather like today?"</span>
+    },
+    {
+      <span class="json-key">"role"</span>: <span class="json-string">"assistant"</span>,
+      <span class="json-key">"tool_calls"</span>: [...]
+    },
+    {
+      <span class="json-key">"role"</span>: <span class="json-string">"tool"</span>,
+      <span class="json-key">"content"</span>: <span class="json-string">"Temperature: 72°F, Conditions: sunny..."</span>
+    }
+  ]
+}</pre>
+                        </div>
+                    </div>
+                </div>
+                <div class="actor-cell">
+                    <div class="console-block">
+                        <span class="console-time">14:23:02.950</span>
+                        <span class="console-badge llm">LLM</span>
+                        Received context with tool result
+                    </div>
+                </div>
+                <div class="comm-lane empty"></div>
+                <div class="actor-cell empty"></div>
+            </div>
+
+            <!-- Row 18: LLM Synthesizing -->
+            <div class="timeline-row">
+                <div class="actor-cell empty"></div>
+                <div class="comm-lane empty"></div>
+                <div class="actor-cell">
+                    <div class="thinking-indicator">
+                        <div class="thinking-dots">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                        <span>Generating final response...</span>
+                    </div>
+                </div>
+                <div class="comm-lane empty"></div>
+                <div class="actor-cell empty"></div>
+            </div>
+
+            <!-- Row 19: Final LLM Response -->
+            <div class="timeline-row">
+                <div class="actor-cell">
+                    <div class="console-block">
+                        <span class="console-time">14:23:03.100</span>
+                        <span class="console-badge system">SYSTEM</span>
+                        LLM returned final answer
+                    </div>
+                </div>
+                <div class="comm-lane">
+                    <div class="message-card response" onclick="toggleCard(this)">
+                        <span class="message-badge">RESPONSE</span>
+                        <div class="message-method">text response</div>
+                        <div class="message-details">
+                            <span class="message-arrow">←</span>
+                            <span>LLM Response</span>
+                            <span class="message-timing">150ms</span>
+                        </div>
+                        <div class="expand-btn">{ }</div>
+                        <div class="message-payload">
+                            <pre>{
+  <span class="json-key">"content"</span>: <span class="json-string">"The weather today in San Francisco is 72°F and sunny with 65% humidity and light winds at 8 mph. It's a beautiful day!"</span>
+}</pre>
+                        </div>
+                    </div>
+                </div>
+                <div class="actor-cell">
+                    <div class="console-block">
+                        <span class="console-time">14:23:03.100</span>
+                        <span class="console-badge llm">LLM</span>
+                        Generated natural language response
+                    </div>
+                </div>
+                <div class="comm-lane empty"></div>
+                <div class="actor-cell empty"></div>
+            </div>
+
+            <!-- Row 20: Final Assistant Message -->
+            <div class="timeline-row">
+                <div class="actor-cell">
+                    <div class="chat-bubble assistant">
+                        The weather today in San Francisco is 72°F and sunny with 65% humidity and light winds at 8 mph. It's a beautiful day!
+                    </div>
+                </div>
+                <div class="comm-lane empty"></div>
+                <div class="actor-cell empty"></div>
+                <div class="comm-lane empty"></div>
+                <div class="actor-cell empty"></div>
+            </div>
+
+            <!-- Row 21: Complete -->
+            <div class="timeline-row">
+                <div class="actor-cell">
+                    <div class="console-block">
+                        <span class="console-time">14:23:03.150</span>
+                        <span class="console-badge internal">COMPLETE</span>
+                        Response delivered. Total time: 3050ms
+                    </div>
+                </div>
+                <div class="comm-lane empty"></div>
+                <div class="actor-cell empty"></div>
+                <div class="comm-lane empty"></div>
+                <div class="actor-cell empty"></div>
+            </div>
+        </div>
+
+        <!-- Chat Input Row -->
+        <div class="chat-input-row">
+            <div class="chat-input-cell">
+                <input type="text" placeholder="Type a message to see MCP in action...">
+                <button>Send</button>
+            </div>
+            <div class="empty-input-cell"></div>
+            <div class="empty-input-cell"></div>
+            <div class="empty-input-cell"></div>
+            <div class="empty-input-cell"></div>
+        </div>
+    </div>
+
+    <!-- Status Bar -->
+    <div class="status-bar">
+        <div class="status-item">
+            <div class="status-indicator"></div>
+            <span>Connected</span>
+        </div>
+        <div class="status-item">
+            <span>Transport: STDIO</span>
+        </div>
+        <div class="status-item">
+            <span>Timeline: 21 events</span>
+        </div>
+        <div class="status-item">
+            <span>Total: 3.0s</span>
+        </div>
+        <div class="status-item" style="margin-left: auto;">
+            <span>📝 All events recorded for playback</span>
+        </div>
+    </div>
+
+    <script>
+        function toggleCard(card) {
+            card.classList.toggle('expanded');
+        }
+    </script>
+</body>
+</html>
