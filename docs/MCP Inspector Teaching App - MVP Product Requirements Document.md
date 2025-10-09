@@ -87,12 +87,12 @@ This lane shows messages exchanged between Host App and LLM, providing ingress/e
 #### **3.1 Message Cards**
 
 Request cards (Host → LLM):
-- Method: `generate()` with prompt and tools
+- LLM API request with messages and tools
 - Shows "First Inference (Planning)" or "Second Inference (Synthesis)"
 - Arrow indicator: →
 
 Response cards (LLM → Host):
-- Contains `tool_calls` object or final text response
+- Contains `tool_use` content blocks or final text response
 - Timing information
 - Arrow indicator: ←
 
@@ -225,13 +225,13 @@ Row 7: Host App formats tool schemas for LLM (internal, shown in Host App consol
 Must clearly display:
 
 ```
-Row 8: Host App → LLM: generate() with prompt and tool schemas
+Row 8: Host App → LLM: LLM API request with messages and tool schemas
         - Lane 2 shows request card labeled "First Inference (Planning)"
 Row 9: LLM processing (shown in LLM column with thinking indicator)
         - LLM console: "Analyzing available tools..."
-Row 10: LLM → Host App: Returns tool_calls object
+Row 10: LLM → Host App: Returns response with tool_use content blocks
         - Lane 2 shows response card
-        - Host App console: "LLM returned tool_calls object"
+        - Host App console: "LLM returned tool selections"
 ```
 
 #### **7.4 Phase 4: Execution Round Trip**
@@ -255,7 +255,7 @@ Row 16: Host App appends tool result to conversation context (internal)
 Must clearly display:
 
 ```
-Row 17: Host App → LLM: generate() with conversation history including tool result
+Row 17: Host App → LLM: LLM API request with conversation history including tool result
          - Lane 2 shows request card labeled "Second Inference (Synthesis)"
 Row 18: LLM processing (shown in LLM column with thinking indicator)
          - LLM console: "Generating final response..."

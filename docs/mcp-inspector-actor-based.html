@@ -799,7 +799,7 @@
                 <div class="comm-lane">
                     <div class="message-card request" onclick="toggleCard(this)">
                         <span class="message-badge">REQUEST</span>
-                        <div class="message-method">generate()</div>
+                        <div class="message-method">messages.create</div>
                         <div class="message-details">
                             <span class="message-arrow">→</span>
                             <span>First Inference</span>
@@ -858,13 +858,13 @@
                     <div class="console-block">
                         <span class="console-time">14:23:02.300</span>
                         <span class="console-badge system">SYSTEM</span>
-                        LLM returned tool_calls object
+                        LLM returned tool selections
                     </div>
                 </div>
                 <div class="comm-lane">
                     <div class="message-card response" onclick="toggleCard(this)">
                         <span class="message-badge">RESPONSE</span>
-                        <div class="message-method">tool_calls</div>
+                        <div class="message-method">content blocks</div>
                         <div class="message-details">
                             <span class="message-arrow">←</span>
                             <span>LLM Response</span>
@@ -873,13 +873,13 @@
                         <div class="expand-btn">{ }</div>
                         <div class="message-payload">
                             <pre>{
-  <span class="json-key">"tool_calls"</span>: [
+  <span class="json-key">"content"</span>: [
     {
-      <span class="json-key">"id"</span>: <span class="json-string">"call_abc123"</span>,
-      <span class="json-key">"type"</span>: <span class="json-string">"function"</span>,
-      <span class="json-key">"function"</span>: {
-        <span class="json-key">"name"</span>: <span class="json-string">"get_weather"</span>,
-        <span class="json-key">"arguments"</span>: <span class="json-string">"{\"location\":\"San Francisco\"}"</span>
+      <span class="json-key">"type"</span>: <span class="json-string">"tool_use"</span>,
+      <span class="json-key">"id"</span>: <span class="json-string">"toolu_abc123"</span>,
+      <span class="json-key">"name"</span>: <span class="json-string">"get_weather"</span>,
+      <span class="json-key">"input"</span>: {
+        <span class="json-key">"location"</span>: <span class="json-string">"San Francisco"</span>
       }
     }
   ]
@@ -1061,7 +1061,7 @@
                 <div class="comm-lane">
                     <div class="message-card request" onclick="toggleCard(this)">
                         <span class="message-badge">REQUEST</span>
-                        <div class="message-method">generate()</div>
+                        <div class="message-method">messages.create</div>
                         <div class="message-details">
                             <span class="message-arrow">→</span>
                             <span>Second Inference</span>
@@ -1076,11 +1076,16 @@
     },
     {
       <span class="json-key">"role"</span>: <span class="json-string">"assistant"</span>,
-      <span class="json-key">"tool_calls"</span>: [...]
+      <span class="json-key">"content"</span>: [...]
     },
     {
-      <span class="json-key">"role"</span>: <span class="json-string">"tool"</span>,
-      <span class="json-key">"content"</span>: <span class="json-string">"Temperature: 72°F, Conditions: sunny..."</span>
+      <span class="json-key">"role"</span>: <span class="json-string">"user"</span>,
+      <span class="json-key">"content"</span>: [
+        {
+          <span class="json-key">"type"</span>: <span class="json-string">"tool_result"</span>,
+          <span class="json-key">"content"</span>: <span class="json-string">"Temperature: 72°F, Conditions: sunny..."</span>
+        }
+      ]
     }
   ]
 }</pre>

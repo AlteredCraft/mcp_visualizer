@@ -3,7 +3,7 @@ This document analyzes the MCP Inspector Teaching App POC against the Product Re
 
 ## **PRD Inaccuracies Identified from POC Validation**
 
-### **1. Claude API Call Terminology (Minor - Terminology)**
+### [X] **1. Claude API Call Terminology (Minor - Terminology)**
 
 **PRD Section 3.1 and throughout**
 
@@ -12,7 +12,7 @@ This document analyzes the MCP Inspector Teaching App POC against the Product Re
 - **Impact**: Low - just terminology, but should be corrected for technical accuracy
 - **Fix**: Change references from `generate()` to `messages.create()` or use generic terminology like "inference request"
 
-### **2. LLM Response Structure (Moderate - Technical)**
+### [ ] **2. LLM Response Structure (Moderate - Technical)**
 
 **PRD Section 7.3 (Row 10)**
 
@@ -21,7 +21,7 @@ This document analyzes the MCP Inspector Teaching App POC against the Product Re
 - **Impact**: Moderate - affects how message visualization should work
 - **Fix**: Change to "Returns response with `tool_use` content blocks" or similar
 
-### **3. Multiple Tool Calls in Single Phase (Major - Workflow)**
+### [ ] **3. Multiple Tool Calls in Single Phase (Major - Workflow)**
 
 **PRD Section 7.4 - Phase 4: Execution Round Trip**
 
@@ -30,7 +30,7 @@ This document analyzes the MCP Inspector Teaching App POC against the Product Re
 - **Impact**: Major - affects UI design for vertical alignment and spacer blocks
 - **Fix**: Update Phase 4 description to clarify that multiple tool calls can occur sequentially within this single phase, before synthesis begins
 
-### **4. Missing Detail on Tool Result Structure (Minor - Completeness)**
+### [ ] **4. Missing Detail on Tool Result Structure (Minor - Completeness)**
 
 **PRD Section 7.4 (Row 15)**
 
@@ -39,7 +39,7 @@ This document analyzes the MCP Inspector Teaching App POC against the Product Re
 - **Impact**: Low - developers will discover this, but PRD should document it
 - **Fix**: Add detail about MCP tool result structure in technical requirements section
 
-### **5. User Consent Checkpoint Position (Minor - Clarification)**
+### [ ] **5. User Consent Checkpoint Position (Minor - Clarification)**
 
 **PRD Section 7.4 (Row 11)**
 
@@ -48,7 +48,7 @@ This document analyzes the MCP Inspector Teaching App POC against the Product Re
 - **Impact**: Low - PRD correctly marks as optional, but could clarify batch consent
 - **Fix**: Add note that consent may cover multiple tools when batch execution occurs
 
-### **6. Communication Lane Description Clarity (Minor - Pedagogical)**
+### [ ] **6. Communication Lane Description Clarity (Minor - Pedagogical)**
 
 **PRD Section 1.1**
 
@@ -57,7 +57,7 @@ This document analyzes the MCP Inspector Teaching App POC against the Product Re
 - **Impact**: Very low - mostly clear, but could be stronger
 - **Fix**: Rephrase to emphasize "Column 4 shows Host App → MCP Server communication directly, with no LLM involvement, even though the LLM column appears between them"
 
-### **7. Tool Schema Conversion Details (Minor - Technical)**
+### [ ] **7. Tool Schema Conversion Details (Minor - Technical)**
 
 **PRD Section 7.2 (Row 7)**
 
@@ -66,7 +66,7 @@ This document analyzes the MCP Inspector Teaching App POC against the Product Re
 - **Impact**: Low - implementation detail
 - **Fix**: Optional - could add technical note about schema field name mapping
 
-### **8. Phase 3 Response Content (Minor - Accuracy)**
+### [ ] **8. Phase 3 Response Content (Minor - Accuracy)**
 
 **PRD Section 7.3 (Row 9)**
 
@@ -75,7 +75,7 @@ This document analyzes the MCP Inspector Teaching App POC against the Product Re
 - **Impact**: Low - affects LLM column visualization
 - **Fix**: Note that Claude's planning response can include explanatory text alongside tool selections
 
-### **9. Missing: Tool Result Formatting for Claude (Moderate - Technical)**
+### [ ] **9. Missing: Tool Result Formatting for Claude (Moderate - Technical)**
 
 **PRD doesn't mention**: The conversion step from MCP tool result to Claude's expected format
 
@@ -83,7 +83,7 @@ This document analyzes the MCP Inspector Teaching App POC against the Product Re
 - **Impact**: Moderate - this is a key Host App responsibility that should be documented
 - **Fix**: Add to Phase 4 or technical requirements that Host App converts MCP result format to Claude's tool_result format
 
-### **10. Message Recording Structure - Missing Tool-Specific Fields (Minor - Data Model)**
+### [ ] **10. Message Recording Structure - Missing Tool-Specific Fields (Minor - Data Model)**
 
 **PRD Section 9.1**
 
