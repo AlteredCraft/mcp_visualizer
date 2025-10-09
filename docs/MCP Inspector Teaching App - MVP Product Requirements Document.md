@@ -130,23 +130,52 @@ This lane shows JSON-RPC messages exchanged between Host App and MCP Server, pro
 
 #### **5.1 Message Cards**
 
-Request cards (Host → MCP Server):
-- Methods: `initialize`, `tools/list`, `tools/call`
-- Sequence number (#1, #2, #3...)
-- Tool name for `tools/call` requests
-- Arrow indicator: →
-- Green left border
+**JSON-RPC Message Type Distinction**:
 
-Response cards (MCP Server → Host):
-- Response to corresponding request ID
-- Timing information (e.g., "33ms", "540ms")
-- Arrow indicator: ←
-- Blue right border
+The MCP protocol uses JSON-RPC 2.0, which defines three types of messages that are visualized as different card types:
 
-Notification cards (Host → MCP Server):
-- Method: `initialized`
-- No response expected
-- Purple left border
+**REQUEST Cards** (Host → MCP Server):
+- **JSON-RPC Pattern**: Contains an `id` field, expects a response
+- **Methods**: `initialize`, `tools/list`, `tools/call`
+- **Visual**: Green left border (#10B981), sequence number (#1, #2, #3...)
+- **Arrow indicator**: →
+- **Example**:
+  ```json
+  {
+    "jsonrpc": "2.0",
+    "id": 1,                    // ← Has ID for correlation
+    "method": "initialize",
+    "params": { ... }
+  }
+  ```
+
+**RESPONSE Cards** (MCP Server → Host):
+- **JSON-RPC Pattern**: Contains an `id` field matching the request
+- **Visual**: Blue right border (#3B82F6), timing information (e.g., "33ms", "540ms")
+- **Arrow indicator**: ←
+- **Example**:
+  ```json
+  {
+    "jsonrpc": "2.0",
+    "id": 1,                    // ← Matches request ID
+    "result": { ... }
+  }
+  ```
+
+**NOTIFICATION Cards** (Host → MCP Server):
+- **JSON-RPC Pattern**: **NO `id` field** - fire-and-forget, no response expected
+- **Methods**: `initialized` (completes the initialization handshake)
+- **Visual**: Purple left border (#8b5cf6)
+- **Arrow indicator**: →
+- **Example**:
+  ```json
+  {
+    "jsonrpc": "2.0",
+    "method": "initialized"     // ← No ID field
+  }
+  ```
+
+**Pedagogical Purpose**: This three-way distinction teaches that MCP uses standard JSON-RPC patterns, including one-way notifications for events that don't require responses. The `initialized` notification signals handshake completion without blocking for a reply.
 
 #### **5.2 Message Representation**
 
