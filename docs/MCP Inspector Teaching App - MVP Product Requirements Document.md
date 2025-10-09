@@ -20,7 +20,7 @@ The application uses an actor-based architecture that mirrors sequence diagrams,
 - **Column 4 (15%)**: Communication Lane (ingress/egress to MCP Server)
 - **Column 5 (35%)**: MCP Server Actor
 
-**Communication Lane Purpose**: Communication lanes (Columns 2 and 4) are general-purpose conduits that show ingress and egress communication for the actor column to their right, regardless of the origin of the communication. For example, Column 4 displays Host App ↔ MCP Server communication, even though it skips over the LLM column. Vertical alignment implicitly illustrates the communication path. See ![[supporting images/communication to mcp server.png]] for visual reference.
+**Communication Lane Purpose**: Communication lanes (Columns 2 and 4) are general-purpose conduits that show ingress and egress communication for the actor column to their right, regardless of the origin of the communication. For example, Column 4 shows Host App ↔ MCP Server communication directly, with no LLM involvement, even though the LLM column appears between them spatially. This visual separation is pedagogically important: it demonstrates that the LLM never directly communicates with MCP servers. Vertical alignment implicitly illustrates the communication path. See ![[supporting images/communication to mcp server.png]] for visual reference.
 
 This layout pedagogically demonstrates that:
 - The LLM is a separate inference service, not part of the Host App
@@ -326,7 +326,60 @@ Phase headers spanning all columns:
 
 ### **9. Technical Implementation Requirements**
 
-#### **9.1 Message Recording Structure**
+#### **9.1 Key Protocol Message Structures**
+
+**MCP Tool Result Structure (tools/call response)**:
+
+MCP servers return tool results with the following structure:
+
+```javascript
+{
+  content: [
+    {
+      type: 'text' | 'image' | 'resource',
+      text?: string,           // For text content
+      data?: string,           // For image content (base64)
+      mimeType?: string,       // For image content
+      annotations?: object,
+      meta?: object
+    }
+  ],
+  structuredContent?: object,  // Optional structured data
+  isError: boolean,            // Indicates if execution failed
+  meta?: object                // Optional metadata
+}
+```
+
+**LLM Response Structure (Planning Phase)**:
+
+When the LLM selects tools, it returns a response with content blocks:
+
+```javascript
+{
+  id: string,
+  content: [
+    {
+      type: 'text',
+      text: string              // Optional explanation
+    },
+    {
+      type: 'tool_use',
+      id: string,               // Tool use ID for correlation
+      name: string,             // Tool name
+      input: object             // Tool arguments
+    }
+  ],
+  stop_reason: 'tool_use' | 'end_turn'
+}
+```
+
+**Key Integration Points**:
+- MCP `content` array → Host App extracts text → LLM `tool_result` format
+- LLM `tool_use` blocks → Host App extracts name/input → MCP `tools/call` request
+- `isError: true` in MCP result should be communicated to LLM in tool_result
+- The LLM may include explanatory text blocks alongside tool_use blocks
+
+#### **9.2 Message Recording Structure**
 
 Record all events (protocol messages, internal operations, console logs):
 
