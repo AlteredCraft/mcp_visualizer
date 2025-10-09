@@ -111,9 +111,11 @@ This column shows LLM processing as a separate, independent service. **Pedagogic
 Console blocks showing LLM operations:
 - Received prompt with tool schemas
 - Analyzing available tools
-- Decided to call specific tool
+- Decided to call specific tool (may include explanatory text in response)
 - Received context with tool result
 - Generating final response
+
+**Note**: The LLM's planning response (Phase 3) may include both explanatory text blocks and tool_use blocks. The UI should display both content types to show the LLM's reasoning process.
 
 #### **4.2 Thinking Indicators**
 
@@ -374,10 +376,17 @@ When the LLM selects tools, it returns a response with content blocks:
 ```
 
 **Key Integration Points**:
-- MCP `content` array → Host App extracts text → LLM `tool_result` format
-- LLM `tool_use` blocks → Host App extracts name/input → MCP `tools/call` request
-- `isError: true` in MCP result should be communicated to LLM in tool_result
-- The LLM may include explanatory text blocks alongside tool_use blocks
+- **Tool Discovery (Phase 2)**: MCP tool schema (`inputSchema`) → LLM tool format (`input_schema`)
+  - Field name conversion: `inputSchema` → `input_schema`
+  - Structure remains the same (JSON Schema format)
+- **Tool Selection (Phase 3)**: LLM `tool_use` blocks → MCP `tools/call` request
+  - Extract `name` and `input` from LLM response
+  - Format as MCP JSON-RPC request
+- **Tool Results (Phase 4)**: MCP `content` array → LLM `tool_result` format
+  - Extract text from MCP content blocks
+  - Create `tool_result` block with `tool_use_id` for correlation
+  - Communicate `isError: true` status to LLM if tool execution failed
+- **Response Content**: The LLM may include explanatory text blocks alongside tool_use blocks
 
 #### **9.2 Message Recording Structure**
 
@@ -408,7 +417,14 @@ Record all events (protocol messages, internal operations, console logs):
     processingTime?: number,
     correlatedMessageId?: string,
     messageType: string,
-    phase?: 'initialization' | 'discovery' | 'selection' | 'execution' | 'synthesis'
+    phase?: 'initialization' | 'discovery' | 'selection' | 'execution' | 'synthesis',
+
+    // Tool-specific metadata (for tool execution events)
+    toolName?: string,           // Name of tool being called
+    toolId?: string,             // Tool use ID for correlation
+    toolArguments?: object,      // Arguments passed to tool
+    toolResultContent?: string,  // Extracted content from tool result
+    toolError?: boolean          // Whether tool execution failed
   }
 }
 ```
