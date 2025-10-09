@@ -104,23 +104,50 @@ The POC produces detailed console output showing:
 - **Tool schemas** - Both MCP and Claude formats
 - **Validation summary** - Confirms all phases completed
 
-### Sample Output Structure
+### Sample Output
 
 ```
 ================================================================================
 MCP PROTOCOL VALIDATION POC
 ================================================================================
 
-User Query: "What's the weather like in San Francisco?"
+User Query: "What's the weather in Tokyo?"
 
 ================================================================================
 PHASE 1: INITIALIZATION & NEGOTIATION
 ================================================================================
-[HOST] Connecting to MCP server: .../simple_server.py
+[HOST] Connecting to MCP server: /Users/sam/Projects/mcp-visualizer/mcp_visualizer/poc/simple_server.py
 [HOST] → MCP SERVER: Sending 'initialize' request
 [SERVER] Starting simple-poc-server...
+[SERVER] Available tools: get_weather, calculate
 [HOST] ← MCP SERVER: Received 'initialize' response
-[HOST] Server capabilities: {...}
+[HOST] Server capabilities: {
+  "meta": null,
+  "protocolVersion": "2025-06-18",
+  "capabilities": {
+    "experimental": {},
+    "logging": null,
+    "prompts": {
+      "listChanged": false
+    },
+    "resources": {
+      "subscribe": false,
+      "listChanged": false
+    },
+    "tools": {
+      "listChanged": false
+    },
+    "completions": null
+  },
+  "serverInfo": {
+    "name": "simple-poc-server",
+    "title": null,
+    "version": "1.16.0",
+    "websiteUrl": null,
+    "icons": null
+  },
+  "instructions": null
+}
 [HOST] → MCP SERVER: Sending 'initialized' notification
 [HOST] Handshake complete ✓
 
@@ -128,49 +155,156 @@ PHASE 1: INITIALIZATION & NEGOTIATION
 PHASE 2: DISCOVERY & CONTEXTUALIZATION
 ================================================================================
 [HOST] → MCP SERVER: Requesting 'tools/list'
+Processing request of type ListToolsRequest
 [HOST] ← MCP SERVER: Received 2 tool(s)
+
 [HOST] Tool discovered: get_weather
        Description: Get the current weather for a city.
-       Input schema: {...}
+
+Args:
+    city: The name of the city to get weather for
+
+Returns:
+    A description of the weather in the city
+
+       Input schema: {
+  "properties": {
+    "city": {
+      "title": "City",
+      "type": "string"
+    }
+  },
+  "required": [
+    "city"
+  ],
+  "title": "get_weatherArguments",
+  "type": "object"
+}
+
 [HOST] Tool discovered: calculate
        Description: Safely evaluate a mathematical expression.
-       Input schema: {...}
+
+Args:
+    expression: A mathematical expression (e.g., "2 + 2", "10 * 5")
+
+Returns:
+    The result of the calculation
+
+       Input schema: {
+  "properties": {
+    "expression": {
+      "title": "Expression",
+      "type": "string"
+    }
+  },
+  "required": [
+    "expression"
+  ],
+  "title": "calculateArguments",
+  "type": "object"
+}
 
 [HOST] Converting MCP tool schemas to Claude API format...
+[HOST] Converted tool: get_weather
+[HOST] Converted tool: calculate
+
 [HOST] Tool schemas formatted for Claude ✓
+[HOST] Ready to send tools to Claude with user query
 
 ================================================================================
 PHASE 3: MODEL-DRIVEN SELECTION (First LLM Inference - Planning)
 ================================================================================
 [HOST] → CLAUDE: Sending first inference request (planning)
+[HOST] Including 2 tool(s) in context
+
+[CLAUDE] Sending request to Claude API (claude-sonnet-4-20250514)
+[CLAUDE] Message count: 1
+[CLAUDE] Available tools: ['get_weather', 'calculate']
 [CLAUDE] Response received:
-[CLAUDE] Block 0: tool_use - get_weather
-[CLAUDE]   Input: {"city": "San Francisco"}
-[CLAUDE] Claude selected 1 tool(s) to call
+[CLAUDE] Stop reason: tool_use
+[CLAUDE] Content blocks: 2
+[CLAUDE] Block 0: text (48 chars)
+[CLAUDE] Block 1: tool_use - get_weather
+[CLAUDE]   Input: {
+  "city": "Tokyo"
+}
+
+[HOST] ← CLAUDE: Received planning response
+
+[CLAUDE] Claude selected 1 tool(s) to call:
+[CLAUDE]   - get_weather with input: {"city": "Tokyo"}
 
 ================================================================================
 PHASE 4: EXECUTION ROUND TRIP
 ================================================================================
 [HOST] → MCP SERVER: Calling tool 'get_weather'
-[SERVER] Tool 'get_weather' called with city='San Francisco'
+[HOST] Arguments: {
+  "city": "Tokyo"
+}
+Processing request of type CallToolRequest
+[SERVER] Tool 'get_weather' called with city='Tokyo'
+[SERVER] Returning: Clear, 68°F (20°C)
 [HOST] ← MCP SERVER: Received tool result
+[HOST] Result: {
+  "meta": null,
+  "content": [
+    {
+      "type": "text",
+      "text": "Clear, 68\u00b0F (20\u00b0C)",
+      "annotations": null,
+      "meta": null
+    }
+  ],
+  "structuredContent": {
+    "result": "Clear, 68\u00b0F (20\u00b0C)"
+  },
+  "isError": false
+}
+
+[HOST] All tool calls completed. Preparing synthesis request...
 
 ================================================================================
 PHASE 5: SYNTHESIS & FINAL RESPONSE (Second LLM Inference - Synthesis)
 ================================================================================
 [HOST] → CLAUDE: Sending second inference request (synthesis)
+[HOST] Including conversation history with 1 tool result(s)
+
+[CLAUDE] Sending request to Claude API (claude-sonnet-4-20250514)
+[CLAUDE] Message count: 3
+[CLAUDE] Available tools: ['get_weather', 'calculate']
 [CLAUDE] Response received:
-[CLAUDE] Block 0: text (...)
+[CLAUDE] Stop reason: end_turn
+[CLAUDE] Content blocks: 1
+[CLAUDE] Block 0: text (114 chars)
+
+[HOST] ← CLAUDE: Received synthesis response
 
 ================================================================================
 FINAL RESPONSE TO USER
 ================================================================================
 
-The weather in San Francisco is currently sunny with a temperature of 72°F (22°C).
+The current weather in Tokyo is clear with a temperature of 68°F (20°C). It's a pleasant day with good visibility!
+
 
 ================================================================================
 POC COMPLETE - ALL 5 PHASES VALIDATED ✓
 ================================================================================
+
+Validation Summary:
+✓ Phase 1: Initialization & Negotiation (3-message handshake)
+✓ Phase 2: Discovery & Contextualization (tools/list)
+✓ Phase 3: Model-Driven Selection (First Claude call)
+✓ Phase 4: Execution Round Trip (tools/call)
+✓ Phase 5: Synthesis & Final Response (Second Claude call)
+
+Key Observations:
+  - Host App orchestrated all communication
+  - Claude never directly communicated with MCP server
+  - Two distinct Claude API calls (planning + synthesis)
+  - MCP tool schemas successfully converted to Claude format
+  - JSON-RPC 2.0 protocol observed throughout
+
+[HOST] MCP client connection closed
 ```
 
 ## Components
