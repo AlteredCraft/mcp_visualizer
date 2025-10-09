@@ -1061,7 +1061,7 @@
                 <div class="comm-lane">
                     <div class="message-card request" onclick="toggleCard(this)">
                         <span class="message-badge">REQUEST</span>
-                        <div class="message-method">messages.create</div>
+                        <div class="message-method">generate()</div>
                         <div class="message-details">
                             <span class="message-arrow">→</span>
                             <span>Second Inference</span>
@@ -1076,16 +1076,11 @@
     },
     {
       <span class="json-key">"role"</span>: <span class="json-string">"assistant"</span>,
-      <span class="json-key">"content"</span>: [...]
+      <span class="json-key">"tool_calls"</span>: [...]
     },
     {
-      <span class="json-key">"role"</span>: <span class="json-string">"user"</span>,
-      <span class="json-key">"content"</span>: [
-        {
-          <span class="json-key">"type"</span>: <span class="json-string">"tool_result"</span>,
-          <span class="json-key">"content"</span>: <span class="json-string">"Temperature: 72°F, Conditions: sunny..."</span>
-        }
-      ]
+      <span class="json-key">"role"</span>: <span class="json-string">"tool"</span>,
+      <span class="json-key">"content"</span>: <span class="json-string">"Temperature: 72°F, Conditions: sunny..."</span>
     }
   ]
 }</pre>
