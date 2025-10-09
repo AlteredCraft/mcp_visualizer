@@ -236,10 +236,13 @@ Row 10: LLM → Host App: Returns response with tool_use content blocks
 
 #### **7.4 Phase 4: Execution Round Trip**
 
-Must clearly display:
+**Note**: When the LLM selects multiple tools in Phase 3, ALL tool executions occur sequentially within Phase 4 before proceeding to Phase 5. Each tool call follows the same pattern below.
+
+Must clearly display (per tool execution):
 
 ```
 Row 11: (Optional) User consent checkpoint (shown in Host App if implemented)
+         - When multiple tools are selected, consent may be requested once for all tools
 Row 12: Host App → MCP Server: tools/call request (#3)
 Row 13: MCP Server processing - calls AWS Documentation API
          - MCP Server console: "Searching AWS documentation API..."
@@ -248,6 +251,8 @@ Row 14: External API responds
 Row 15: MCP Server → Host App: tools/call response with result
 Row 16: Host App appends tool result to conversation context (internal)
          - Host App console: "Appending tool result to conversation"
+
+(If multiple tools were selected in Phase 3, rows 12-16 repeat for each tool call)
 ```
 
 #### **7.5 Phase 5: Synthesis & Final Response (Second LLM Inference)**
@@ -255,8 +260,9 @@ Row 16: Host App appends tool result to conversation context (internal)
 Must clearly display:
 
 ```
-Row 17: Host App → LLM: LLM API request with conversation history including tool result
+Row 17: Host App → LLM: LLM API request with conversation history including tool result(s)
          - Lane 2 shows request card labeled "Second Inference (Synthesis)"
+         - Includes all tool results from Phase 4 (whether one or multiple tools were executed)
 Row 18: LLM processing (shown in LLM column with thinking indicator)
          - LLM console: "Generating final response..."
 Row 19: LLM → Host App: Returns final natural language text
@@ -415,8 +421,9 @@ The application should provide suggested queries that demonstrate the complete M
 
 **Suggested Query 2**: "Look up S3 bucket naming rules and show me related topics"
 - Demonstrates: Multiple tool calls (`search_documentation` + `read_documentation` + `recommend`)
-- Complex workflow with multiple execution phases
+- Complex workflow with multiple sequential tool executions within Phase 4
 - Shows vertical alignment with spacer blocks across multiple server operations
+- Illustrates that all tools execute before synthesis begins
 
 **Suggested Query 3**: "What are the security best practices for Lambda functions?"
 - Demonstrates: LLM selecting appropriate tools based on query intent
