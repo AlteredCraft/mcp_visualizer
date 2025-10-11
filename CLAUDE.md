@@ -133,6 +133,24 @@ This structure supports future playback and step-through features.
 5. **Phase 5**: Live learning experience (AWS MCP server integration, suggested queries)
 6. **Phase 6**: Polish and testing (100+ events performance testing)
 
+## Testing & Validation
+
+**Use Chrome DevTools MCP Server for all UI validation.** After implementing each feature or module:
+
+1. **Start the dev server** and navigate to `http://localhost:3000` using `mcp__chrome-devtools__navigate_page`
+2. **Take screenshots** (`take_screenshot`) to verify visual rendering against mockups
+3. **Take snapshots** (`take_snapshot`) to extract DOM structure and element positions
+4. **Run validation scripts** (`evaluate_script`) to programmatically verify:
+   - Column widths match specification (20%, 15%, 15%, 15%, 35%)
+   - Vertical alignment across all rows (all cells in a row have equal height)
+   - Zustand store state (event recording, sequence numbers)
+   - Component functionality (expand/collapse, interactions)
+5. **Test interactions** (`click`, `hover`, `fill`) to verify user flows
+6. **Check console** (`list_console_messages`) for JavaScript errors
+7. **Monitor performance** (`performance_start_trace` / `performance_stop_trace`) for render times and Core Web Vitals
+
+**Validation is mandatory before moving to the next module.** Document all validation results inline with implementation progress.
+
 ## Key Documentation
 
 - [docs/MCP Inspector Teaching App - MVP Product Requirements Document.md](docs/MCP%20Inspector%20Teaching%20App%20-%20MVP%20Product%20Requirements%20Document.md) - Complete MVP specification with detailed requirements
