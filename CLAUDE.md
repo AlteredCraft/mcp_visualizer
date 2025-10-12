@@ -137,6 +137,8 @@ This structure supports future playback and step-through features.
 
 **Use Chrome DevTools MCP Server for all UI validation.** After implementing each feature or module:
 
+Note: If you receive a response from the DevTools MCP server to the effect: "The browser is already running for ...". Pause and ask the user to close the existing browser instance before proceeding.
+
 1. **Start the dev server** and navigate to `http://localhost:3000` using `mcp__chrome-devtools__navigate_page`
 2. **Take screenshots** (`take_screenshot`) to verify visual rendering against mockups
 3. **Take snapshots** (`take_snapshot`) to extract DOM structure and element positions
