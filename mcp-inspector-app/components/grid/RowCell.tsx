@@ -1,6 +1,7 @@
 import { RowCell as RowCellType } from '@/types/domain';
 import { SpacerBlock } from './SpacerBlock';
 import { ActorCell } from '../actors/ActorCell';
+import { LaneCell } from '../lanes/LaneCell';
 
 interface RowCellProps {
   cell: RowCellType;
@@ -13,6 +14,7 @@ interface RowCellProps {
  *
  * Wrapper for individual cells in a timeline row.
  * Renders either content or a spacer block based on cell type.
+ * Routes content to ActorCell or LaneCell based on column type.
  */
 export function RowCell({ cell, columnWidth, columnType }: RowCellProps) {
   const baseClasses = "border-r border-gray-200 px-3 py-2 h-full";
@@ -43,10 +45,10 @@ export function RowCell({ cell, columnWidth, columnType }: RowCellProps) {
           {columnType === 'actor' ? (
             <ActorCell content={cell.content} />
           ) : (
-            // Lane cells will be implemented in Module 4
-            <div className="text-xs bg-gray-100 px-2 py-1 rounded">
-              {cell.content.type}
-            </div>
+            // Lane cells (Module 4)
+            cell.content.type === 'message_card' && (
+              <LaneCell card={cell.content.card} />
+            )
           )}
         </div>
       )}
