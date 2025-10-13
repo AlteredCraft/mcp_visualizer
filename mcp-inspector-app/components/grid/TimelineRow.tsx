@@ -17,7 +17,7 @@ interface TimelineRowProps {
 export function TimelineRow({ row }: TimelineRowProps) {
   return (
     <div
-      className="grid grid-cols-[20%_15%_15%_15%_35%] w-full min-h-[60px] border-b border-gray-300"
+      className="grid grid-cols-[20%_15%_15%_15%_35%] w-full min-h-[60px] border-b border-gray-300 items-stretch"
       data-row={row.rowId}
       data-sequence={row.sequence}
     >
@@ -28,6 +28,7 @@ export function TimelineRow({ row }: TimelineRowProps) {
             key={cell.columnId}
             cell={cell}
             columnWidth={columnDef?.width || 'w-full'}
+            columnType={columnDef?.type || 'actor'}
           />
         );
       })}
