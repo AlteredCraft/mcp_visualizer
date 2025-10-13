@@ -19,7 +19,7 @@ import { COLUMN_DEFINITIONS } from '../components/column-definitions';
  * Detect the phase of a timeline event based on metadata
  */
 export function detectEventPhase(event: TimelineEvent): Phase | null {
-  return event.metadata.phase || null;
+  return event.metadata?.phase || null;
 }
 
 /**
