@@ -205,9 +205,8 @@ export default function TestModule7() {
       const results: ClaudeToolResult[] = [];
 
       for (const toolCall of planningData.toolCalls) {
-        // Note: Using old /api/mcp/call endpoint for now
-        // Module 8 will update global-client to expose callTool via API
-        const callRes = await fetch('/api/mcp/call', {
+        // Use v2 endpoint (global singleton client)
+        const callRes = await fetch('/api/mcp/call-v2', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
