@@ -1,4 +1,4 @@
-import { ColumnDefinition } from '@/types/domain';
+import { ColumnDefinition } from '../types/domain';
 
 /**
  * Five-column actor-based layout configuration

@@ -12,8 +12,8 @@
  * 5. synthesis - Second LLM inference (final response)
  */
 
-import type { TimelineEvent, Phase, TimelineRow, RowCell } from '@/types/domain';
-import { COLUMN_DEFINITIONS } from '@/components/column-definitions';
+import type { TimelineEvent, Phase, TimelineRow, RowCell } from '../types/domain';
+import { COLUMN_DEFINITIONS } from '../components/column-definitions';
 
 /**
  * Detect the phase of a timeline event based on metadata

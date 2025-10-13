@@ -17,7 +17,7 @@
  * ```
  */
 
-import type { TimelineEvent, TimelineRow } from '@/types/domain';
+import type { TimelineEvent, TimelineRow } from '../types/domain';
 import { buildRows } from './row-builder';
 import {
   detectPhaseTransitions,

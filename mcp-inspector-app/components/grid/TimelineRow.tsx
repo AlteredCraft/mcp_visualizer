@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { TimelineRow as TimelineRowType } from '@/types/domain';
 import { COLUMN_DEFINITIONS } from '@/components/column-definitions';
 import { RowCell } from './RowCell';
@@ -13,8 +14,10 @@ interface TimelineRowProps {
  * Maintains strict vertical alignment across all columns.
  *
  * Layout: [20%] [15%] [15%] [15%] [35%]
+ *
+ * Performance: Memoized to prevent unnecessary re-renders when row data hasn't changed
  */
-export function TimelineRow({ row }: TimelineRowProps) {
+export const TimelineRow = memo(function TimelineRow({ row }: TimelineRowProps) {
   return (
     <div
       className="grid grid-cols-[20%_15%_15%_15%_35%] w-full min-h-[60px] border-b border-gray-300 items-stretch"
@@ -34,4 +37,4 @@ export function TimelineRow({ row }: TimelineRowProps) {
       })}
     </div>
   );
-}
+});

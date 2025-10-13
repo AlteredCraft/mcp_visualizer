@@ -25,8 +25,8 @@ import type {
   InternalOperationEvent,
   MessageCard,
   ColumnDefinition,
-} from '@/types/domain';
-import { COLUMN_DEFINITIONS } from '@/components/column-definitions';
+} from '../types/domain';
+import { COLUMN_DEFINITIONS } from '../components/column-definitions';
 
 /**
  * Build rows from timeline events with automatic spacer insertion

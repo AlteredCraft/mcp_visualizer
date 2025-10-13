@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { RowCell as RowCellType } from '@/types/domain';
 import { SpacerBlock } from './SpacerBlock';
 import { ActorCell } from '../actors/ActorCell';
@@ -19,8 +20,10 @@ interface RowCellProps {
  *
  * Special handling for phase headers: they span all columns and render
  * as a full-width banner.
+ *
+ * Performance: Memoized to prevent unnecessary re-renders when cell data hasn't changed
  */
-export function RowCell({ cell, columnWidth, columnType }: RowCellProps) {
+export const RowCell = memo(function RowCell({ cell, columnWidth, columnType }: RowCellProps) {
   const baseClasses = "border-r border-gray-200 px-3 py-2 h-full";
 
   // Phase header cells: only render in the first column
@@ -76,4 +79,4 @@ export function RowCell({ cell, columnWidth, columnType }: RowCellProps) {
       )}
     </div>
   );
-}
+});
