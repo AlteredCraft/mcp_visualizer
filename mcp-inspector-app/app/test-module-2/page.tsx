@@ -71,7 +71,7 @@ export default function TestModule2Page() {
 
       store.addEvent(consoleEvent);
       const count = store.getEventCount();
-      const event = store.getEventBySequence(0);
+      const event = store.getEventBySequence(0) as ConsoleLogEvent | undefined;
 
       if (count === 1 && event && event.logMessage === 'Test console log' && event.sequence === 0) {
         addTestResult('Add Console Log Event', 'pass', `Event added with sequence: ${event.sequence}`);
