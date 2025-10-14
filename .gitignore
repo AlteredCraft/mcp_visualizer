@@ -13,5 +13,9 @@ wheels/
 .env
 .env.local
 
+# Node.js (should only be in mcp-inspector-app subdirectory)
+/package-lock.json
+/node_modules/
+
 .DS_Store
 .vscode/
