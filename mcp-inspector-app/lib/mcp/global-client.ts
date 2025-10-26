@@ -23,7 +23,12 @@ import type {
   MCPToolResult,
   ConnectionState,
 } from '@/types/mcp';
-import type { TimelineEvent } from '@/types/domain';
+import type {
+  TimelineEvent,
+  ConsoleLogEvent,
+  ProtocolMessageEvent,
+  InternalOperationEvent,
+} from '@/types/domain';
 
 /**
  * SSE subscriber callback type.
@@ -111,7 +116,12 @@ export class MCPGlobalClient {
    * This is the central event recording function that replaces direct
    * Zustand store updates. All events flow through here to be broadcast via SSE.
    */
-  public recordEvent(event: Partial<TimelineEvent>): void {
+  public recordEvent(
+    event:
+      | Omit<ConsoleLogEvent, 'sessionId' | 'sequence' | 'timestamp'>
+      | Omit<ProtocolMessageEvent, 'sessionId' | 'sequence' | 'timestamp'>
+      | Omit<InternalOperationEvent, 'sessionId' | 'sequence' | 'timestamp'>
+  ): void {
     const completeEvent: TimelineEvent = {
       sessionId: this.currentSessionId,
       sequence: this.nextSequence(),

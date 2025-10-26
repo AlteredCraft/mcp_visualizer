@@ -256,9 +256,9 @@ export async function executeSynthesisInference(
 export async function executeSingleTool(
   mcpClient: MCPGlobalClient,
   toolName: string,
-  toolArgs: object
+  toolArgs: Record<string, unknown>
 ): Promise<any> {
-  // Record: Invoking tool
+  // Record: Invoking tool (console log)
   mcpClient.recordEvent({
     eventType: 'console_log',
     actor: 'host_app',
@@ -273,10 +273,59 @@ export async function executeSingleTool(
     }
   });
 
+  // Record: MCP tools/call request (protocol message)
+  mcpClient.recordEvent({
+    eventType: 'protocol_message',
+    actor: 'host_app',
+    direction: 'sent',
+    lane: 'host_mcp',
+    message: {
+      method: 'tools/call',
+      params: {
+        name: toolName,
+        arguments: toolArgs
+      }
+    },
+    metadata: {
+      phase: 'execution',
+      messageType: 'mcp_request'
+    }
+  });
+
+  // Record: MCP server processing
+  mcpClient.recordEvent({
+    eventType: 'internal_operation',
+    actor: 'mcp_server',
+    operationType: 'tool_execution',
+    description: `Executing ${toolName}...`,
+    metadata: {
+      phase: 'execution',
+      messageType: 'server_processing'
+    }
+  });
+
   // Execute tool via MCP client
   const result = await mcpClient.callTool(toolName, toolArgs);
 
-  // Record: Received result
+  // Record: MCP tools/call response (protocol message)
+  mcpClient.recordEvent({
+    eventType: 'protocol_message',
+    actor: 'host_app',
+    direction: 'received',
+    lane: 'host_mcp',
+    message: {
+      result: {
+        content: result.content,
+        isError: result.isError || false
+      }
+    },
+    metadata: {
+      phase: 'execution',
+      messageType: 'mcp_response'
+    }
+  });
+
+  // Record: Received result (console log)
   mcpClient.recordEvent({
     eventType: 'console_log',
     actor: 'host_app',

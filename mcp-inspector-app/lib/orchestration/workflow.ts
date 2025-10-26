@@ -253,51 +253,115 @@ export async function executeWorkflow(
     phaseTimings.selection = Date.now() - phase3Start;
 
     // ===================================================================
-    // PHASE 4: EXECUTION ROUND TRIP
+    // PHASES 4 & 5: AGENTIC LOOP (Execution + Synthesis)
     // ===================================================================
-    // Note: All tools execute sequentially within this phase
-    const phase4Start = Date.now();
+    // The LLM may request multiple rounds of tool calls.
+    // We loop: Execute tools → Synthesis → Check if more tools needed → Repeat
 
-    const toolResults: ClaudeToolResult[] = [];
+    let conversationHistory = [
+      { role: 'user' as const, content: userMessage },
+      { role: 'assistant' as const, content: planningResult.message.content }
+    ];
 
-    for (const toolCall of toolCalls) {
-      // Execute tool (records its own events)
-      const mcpResult = await executeSingleTool(
+    let currentToolCalls = toolCalls;
+    let loopIteration = 0;
+    const MAX_ITERATIONS = 5; // Safety limit
+    const allToolsUsed: string[] = []; // Track all tools across iterations
+
+    while (currentToolCalls.length > 0 && loopIteration < MAX_ITERATIONS) {
+      loopIteration++;
+
+      // PHASE 4: EXECUTION ROUND TRIP
+      const phase4Start = Date.now();
+      const toolResults: ClaudeToolResult[] = [];
+
+      for (const toolCall of currentToolCalls) {
+        // Track tool usage
+        allToolsUsed.push(toolCall.name);
+
+        // Execute tool (records its own events)
+        const mcpResult = await executeSingleTool(
+          mcpClient,
+          toolCall.name,
+          toolCall.input as Record<string, unknown>
+        );
+
+        // Format result for Claude
+        const claudeResult = formatToolResultForClaude(
+          toolCall.id,
+          mcpResult
+        );
+
+        toolResults.push(claudeResult);
+      }
+
+      phaseTimings.execution += Date.now() - phase4Start;
+
+      // PHASE 5: SYNTHESIS & RESPONSE
+      const phase5Start = Date.now();
+
+      // Append tool results to conversation
+      conversationHistory.push({
+        role: 'user' as const,
+        content: toolResults
+      });
+
+      // Execute synthesis inference (records its own events)
+      const synthesisResult = await executeSynthesisInference(
+        claudeClient,
         mcpClient,
-        toolCall.name,
-        toolCall.input
+        userMessage,
+        conversationHistory[conversationHistory.length - 2].content, // Previous assistant message
+        toolResults,
+        claudeTools
       );
 
-      // Format result for Claude
-      const claudeResult = formatToolResultForClaude(
-        toolCall.id,
-        mcpResult
-      );
+      phaseTimings.synthesis += Date.now() - phase5Start;
 
-      toolResults.push(claudeResult);
+      // Add synthesis response to conversation
+      conversationHistory.push({
+        role: 'assistant' as const,
+        content: synthesisResult.message.content
+      });
+
+      // Check if LLM wants to call more tools
+      currentToolCalls = extractToolCalls(synthesisResult.message.content);
+
+      if (currentToolCalls.length > 0) {
+        // LLM wants to call more tools - log this and continue loop
+        mcpClient.recordEvent({
+          eventType: 'console_log',
+          actor: 'host_app',
+          logLevel: 'info',
+          logMessage: `LLM requested ${currentToolCalls.length} additional tool(s): ${currentToolCalls.map(tc => tc.name).join(', ')}`,
+          badgeType: 'INTERNAL',
+          metadata: {
+            phase: 'execution',
+            messageType: 'additional_tools',
+            toolNames: currentToolCalls.map(tc => tc.name),
+            loopIteration
+          }
+        });
+      }
     }
 
-    phaseTimings.execution = Date.now() - phase4Start;
+    if (loopIteration >= MAX_ITERATIONS) {
+      mcpClient.recordEvent({
+        eventType: 'console_log',
+        actor: 'host_app',
+        logLevel: 'error',
+        logMessage: `Reached maximum loop iterations (${MAX_ITERATIONS})`,
+        badgeType: 'SYSTEM',
+        metadata: {
+          phase: 'synthesis',
+          messageType: 'max_iterations'
+        }
+      });
+    }
 
-    // ===================================================================
-    // PHASE 5: SYNTHESIS & FINAL RESPONSE (Second LLM Inference)
-    // ===================================================================
-    const phase5Start = Date.now();
-
-    // Execute synthesis inference (records its own events)
-    const synthesisResult = await executeSynthesisInference(
-      claudeClient,
-      mcpClient,
-      userMessage,
-      planningResult.message.content,
-      toolResults,
-      claudeTools
-    );
-
-    // Extract final text response
-    const finalResponse = extractTextResponse(synthesisResult.message.content);
-
-    phaseTimings.synthesis = Date.now() - phase5Start;
+    // Extract final text response from last assistant message
+    const lastAssistantMessage = conversationHistory[conversationHistory.length - 1];
+    const finalResponse = extractTextResponse(lastAssistantMessage.content);
 
     // Record: Workflow complete
     const totalTime = Date.now() - startTime;
@@ -319,7 +383,7 @@ export async function executeWorkflow(
       finalResponse,
       success: true,
       metadata: {
-        toolsUsed: toolCalls.map(tc => tc.name),
+        toolsUsed: allToolsUsed,
         totalTime,
         phaseTimings
       }
