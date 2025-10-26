@@ -1,7 +1,16 @@
 /**
- * API Route: Call MCP Tool
+ * API Route: Call MCP Tool (V1 - DEPRECATED)
  *
  * POST /api/mcp/call
+ *
+ * @deprecated Use /api/mcp/call-v2 instead for enhanced features
+ * and event recording integration.
+ *
+ * This V1 endpoint is maintained for backward compatibility with test-module-6.
+ * For new development, use the V2 endpoint which provides:
+ * - Enhanced error messages
+ * - Automatic event recording
+ * - Detailed console logging for debugging
  *
  * Executes a tool on the connected MCP server.
  *

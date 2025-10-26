@@ -1,7 +1,13 @@
 /**
- * API Route: List MCP Tools
+ * API Route: List MCP Tools (V1 - DEPRECATED)
  *
  * GET /api/mcp/tools
+ *
+ * @deprecated Use /api/mcp/tools-v2 instead for enhanced features
+ * and event recording integration.
+ *
+ * This V1 endpoint is maintained for backward compatibility with test-module-6.
+ * For new development, use the V2 endpoint.
  *
  * Discovers available tools from the connected MCP server.
  */

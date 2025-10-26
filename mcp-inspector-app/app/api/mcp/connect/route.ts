@@ -1,7 +1,17 @@
 /**
- * API Route: Connect to MCP Server
+ * API Route: Connect to MCP Server (V1 - DEPRECATED)
  *
  * POST /api/mcp/connect
+ *
+ * @deprecated Use /api/mcp/connect-v2 instead for enhanced error handling
+ * and event recording integration.
+ *
+ * This V1 endpoint is maintained for backward compatibility with test-module-6.
+ * For new development, use the V2 endpoint which provides:
+ * - Enhanced error messages
+ * - Better connection state tracking
+ * - Automatic event recording
+ * - Detailed console logging
  *
  * Connects to the AWS Documentation MCP server and performs
  * the 3-message handshake (initialize → response → initialized).
