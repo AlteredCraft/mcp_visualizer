@@ -16,6 +16,7 @@ interface AppHeaderProps {
 
 export function AppHeader({ isRecording }: AppHeaderProps) {
   const exportSession = useTimelineStore((state) => state.exportSession);
+  const startNewSession = useTimelineStore((state) => state.startNewSession);
   const sessionId = useTimelineStore((state) => state.sessionId);
   const eventCount = useTimelineStore((state) => state.getEventCount());
   const [exportStatus, setExportStatus] = useState<'idle' | 'exporting' | 'success' | 'error'>('idle');
@@ -55,6 +56,18 @@ export function AppHeader({ isRecording }: AppHeaderProps) {
     }
   };
 
+  const handleResetTrace = () => {
+    if (eventCount === 0) return;
+
+    const confirmed = window.confirm(
+      'Are you sure you want to reset the trace? This will clear all recorded events and start a new session.'
+    );
+
+    if (confirmed) {
+      startNewSession();
+    }
+  };
+
   return (
     <div className="bg-slate-800 text-white px-4 py-2.5 flex items-center justify-between flex-shrink-0">
       {/* App Title */}
@@ -64,6 +77,23 @@ export function AppHeader({ isRecording }: AppHeaderProps) {
 
       {/* Controls Group */}
       <div className="flex items-center gap-3">
+        {/* Reset Trace Button */}
+        <button
+          onClick={handleResetTrace}
+          disabled={eventCount === 0}
+          className={`
+            flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all
+            ${eventCount === 0
+              ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
+              : 'bg-red-600 text-white hover:bg-red-700 hover:shadow-md'
+            }
+          `}
+          title={eventCount === 0 ? 'No events to reset' : 'Clear all events and start a new session'}
+        >
+          <span>🔄</span>
+          <span>Reset Trace</span>
+        </button>
+
         {/* Export Trace Button */}
         <button
           onClick={handleExportTrace}

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { MessageCard as MessageCardType } from '@/types/domain';
 import { MESSAGE_CARD_COLORS } from '@/lib/constants';
-import { JSONPayloadView } from './JSONPayloadView';
+import { PayloadModal } from '../ui/PayloadModal';
 
 /**
  * MessageCard Component
@@ -27,10 +27,10 @@ interface MessageCardProps {
 }
 
 export function MessageCard({ card, onToggle }: MessageCardProps) {
-  const [isExpanded, setIsExpanded] = useState(card.isExpanded);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleToggle = () => {
-    setIsExpanded(!isExpanded);
+    setIsModalOpen(true);
     onToggle?.(card.id);
   };
 
@@ -111,21 +111,20 @@ export function MessageCard({ card, onToggle }: MessageCardProps) {
           </div>
         </div>
 
-        {/* Expand/Collapse button */}
-        {!isExpanded && (
-          <div className="flex items-center gap-2 text-xs text-gray-500">
-            <span className="font-mono">{ }</span>
-            <span>Click to expand payload</span>
-          </div>
-        )}
-
-        {/* Expanded JSON payload */}
-        {isExpanded && (
-          <div className="mt-3">
-            <JSONPayloadView payload={card.payload} />
-          </div>
-        )}
+        {/* Click to view hint */}
+        <div className="flex items-center gap-2 text-xs text-gray-500">
+          <span className="font-mono">{ }</span>
+          <span>Click to expand payload</span>
+        </div>
       </div>
+
+      {/* Payload Modal */}
+      <PayloadModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        payload={card.payload}
+        title={`${card.type.toUpperCase()}: ${card.method}`}
+      />
     </div>
   );
 }
