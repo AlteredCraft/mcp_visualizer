@@ -16,86 +16,36 @@
  * - Phase headers group workflow stages
  */
 
-import { useEffect, useRef } from 'react';
 import { useTimelineStore } from '@/store/timeline-store';
 import { buildTimelineRows } from '@/lib/layout-engine';
+import { useSSEConnection } from '@/hooks/useSSEConnection';
 import { AppHeader } from './AppHeader';
 import { TimelineContainer } from './TimelineContainer';
-import { ChatInputRow } from './ChatInputRow';
-import { StatusBar } from './StatusBar';
-import type { TimelineEvent as DomainTimelineEvent } from '@/types/domain';
+import { ChatInterface } from '@/components/shared/ChatInterface';
+import { StatsDisplay } from '@/components/shared/StatsDisplay';
 
 export function TimelineView() {
   const events = useTimelineStore((state) => state.events);
-  const isRecording = useTimelineStore((state) => state.isRecording);
-  const addEvent = useTimelineStore((state) => state.addEvent);
-  const eventSourceRef = useRef<EventSource | null>(null);
 
-  // Connect to SSE stream and populate Zustand store
-  useEffect(() => {
-    const connectSSE = () => {
-      console.log('[TimelineView] Connecting to SSE stream...');
-      const eventSource = new EventSource('/api/events/stream');
-      eventSourceRef.current = eventSource;
-
-      eventSource.onopen = () => {
-        console.log('[TimelineView] SSE connection opened');
-      };
-
-      eventSource.onmessage = (event) => {
-        try {
-          const timelineEvent = JSON.parse(event.data) as DomainTimelineEvent;
-          console.log('[TimelineView] Received event:', timelineEvent);
-
-          // Add event to Zustand store (will auto-enrich with sessionId, sequence, timestamp)
-          addEvent(timelineEvent);
-        } catch (error) {
-          console.error('[TimelineView] Error parsing SSE event:', error);
-        }
-      };
-
-      eventSource.onerror = (error) => {
-        console.error('[TimelineView] SSE error:', error);
-        eventSource.close();
-        // Attempt to reconnect after 3 seconds
-        setTimeout(connectSSE, 3000);
-      };
-    };
-
-    connectSSE();
-
-    // Cleanup on unmount
-    return () => {
-      if (eventSourceRef.current) {
-        eventSourceRef.current.close();
-      }
-    };
-  }, [addEvent]);
+  // Connect to SSE stream (uses shared hook)
+  useSSEConnection();
 
   // Build timeline rows with spacer insertion and phase headers
   const rows = buildTimelineRows(events, { includePhaseHeaders: true });
 
-  // Compute duration from events (avoid getSessionMetadata which returns new object)
-  const duration = events.length > 0
-    ? events[events.length - 1].timestamp - events[0].timestamp
-    : null;
-
   return (
     <div className="h-screen flex flex-col bg-gray-100">
       {/* Dark header with recording badge */}
-      <AppHeader isRecording={isRecording} />
+      <AppHeader showRecordingBadge={true} />
 
       {/* Main timeline with five-column grid */}
       <TimelineContainer rows={rows} />
 
       {/* Bottom chat input spanning all columns */}
-      <ChatInputRow />
+      <ChatInterface variant="minimal" />
 
       {/* Status bar with connection/event stats */}
-      <StatusBar
-        eventCount={events.length}
-        duration={duration}
-      />
+      <StatsDisplay variant="statusbar" />
     </div>
   );
 }

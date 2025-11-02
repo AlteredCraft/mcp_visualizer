@@ -22,6 +22,9 @@ export const useTimelineStore = create<TimelineStore>()(
     events: [],
     currentSequence: 0,
     isRecording: true,
+    chatHistory: [],
+    workflowPhase: 'idle' as const,
+    isExecuting: false,
 
     // ============================================================================
     // Actions
@@ -61,6 +64,8 @@ export const useTimelineStore = create<TimelineStore>()(
       set((state) => {
         state.events = [];
         state.currentSequence = 0;
+        state.chatHistory = [];
+        state.workflowPhase = 'idle';
       });
     },
 
@@ -70,12 +75,39 @@ export const useTimelineStore = create<TimelineStore>()(
         state.events = [];
         state.currentSequence = 0;
         state.isRecording = true;
+        state.chatHistory = [];
+        state.workflowPhase = 'idle';
+        state.isExecuting = false;
       });
     },
 
     setRecording: (isRecording) => {
       set((state) => {
         state.isRecording = isRecording;
+      });
+    },
+
+    addChatMessage: (message) => {
+      set((state) => {
+        state.chatHistory.push(message);
+      });
+    },
+
+    clearChatHistory: () => {
+      set((state) => {
+        state.chatHistory = [];
+      });
+    },
+
+    setWorkflowPhase: (phase) => {
+      set((state) => {
+        state.workflowPhase = phase;
+      });
+    },
+
+    setExecuting: (isExecuting) => {
+      set((state) => {
+        state.isExecuting = isExecuting;
       });
     },
 

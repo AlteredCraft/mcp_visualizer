@@ -9,7 +9,7 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { TimelineEvent } from '@/types/mcp';
 
 interface SessionControlsProps {
@@ -26,6 +26,12 @@ export function SessionControls({
   disabled = false
 }: SessionControlsProps) {
   const [copyStatus, setCopyStatus] = useState<'idle' | 'copied' | 'error'>('idle');
+  const [mounted, setMounted] = useState(false);
+
+  // Only show sessionId after client-side hydration to avoid mismatch
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleExportSession = async () => {
     try {
@@ -65,7 +71,9 @@ export function SessionControls({
         <div className="text-xs text-gray-600 space-y-1 mb-3">
           <div>
             <span className="font-semibold">Session ID:</span>{' '}
-            <span className="font-mono">{sessionId.slice(0, 8)}...</span>
+            <span className="font-mono">
+              {mounted ? `${sessionId.slice(0, 8)}...` : 'Loading...'}
+            </span>
           </div>
           <div>
             <span className="font-semibold">Events:</span> {events.length}

@@ -5,6 +5,27 @@
 import type { TimelineEvent, Phase, Actor } from '../types/domain';
 
 /**
+ * Workflow phase types
+ */
+export type WorkflowPhase =
+  | 'idle'
+  | 'initializing'
+  | 'discovering'
+  | 'planning'
+  | 'executing'
+  | 'synthesizing'
+  | 'complete'
+  | 'error';
+
+/**
+ * Chat message type
+ */
+export interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+/**
  * Timeline store state and actions
  */
 export interface TimelineStore {
@@ -31,6 +52,21 @@ export interface TimelineStore {
    * Recording status
    */
   isRecording: boolean;
+
+  /**
+   * Chat history for conversation tracking
+   */
+  chatHistory: ChatMessage[];
+
+  /**
+   * Current workflow phase (used by demo page)
+   */
+  workflowPhase: WorkflowPhase;
+
+  /**
+   * Whether a workflow is currently executing
+   */
+  isExecuting: boolean;
 
   // ============================================================================
   // Actions
@@ -65,6 +101,26 @@ export interface TimelineStore {
    * Toggle recording status
    */
   setRecording: (isRecording: boolean) => void;
+
+  /**
+   * Add a message to chat history
+   */
+  addChatMessage: (message: ChatMessage) => void;
+
+  /**
+   * Clear chat history
+   */
+  clearChatHistory: () => void;
+
+  /**
+   * Set current workflow phase
+   */
+  setWorkflowPhase: (phase: WorkflowPhase) => void;
+
+  /**
+   * Set execution status
+   */
+  setExecuting: (isExecuting: boolean) => void;
 
   // ============================================================================
   // Selectors (Query Functions)

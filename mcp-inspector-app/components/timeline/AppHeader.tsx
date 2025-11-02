@@ -1,7 +1,11 @@
 /**
  * AppHeader Component
  *
- * Dark header with app title, export button, and recording badge.
+ * Shared header component with customization options.
+ * Supports two styles:
+ * - Dark header with recording badge (for root timeline view)
+ * - Light header with title/description (for demo page)
+ *
  * Matches HTML mockup styling (docs/mcp-inspector-actor-based.html lines 24-49)
  */
 
@@ -11,14 +15,44 @@ import { useState } from 'react';
 import { useTimelineStore } from '@/store/timeline-store';
 
 interface AppHeaderProps {
-  isRecording: boolean;
+  /**
+   * Custom title (overrides default)
+   */
+  title?: string;
+
+  /**
+   * Optional description/subtitle
+   */
+  description?: string;
+
+  /**
+   * Show recording badge (default: false)
+   */
+  showRecordingBadge?: boolean;
+
+  /**
+   * Show export/reset controls (default: true)
+   */
+  showControls?: boolean;
+
+  /**
+   * Header style variant (default: 'dark')
+   */
+  variant?: 'dark' | 'light';
 }
 
-export function AppHeader({ isRecording }: AppHeaderProps) {
+export function AppHeader({
+  title = '🔍 MCP Inspector - Actor-Based Timeline',
+  description,
+  showRecordingBadge = false,
+  showControls = true,
+  variant = 'dark',
+}: AppHeaderProps) {
   const exportSession = useTimelineStore((state) => state.exportSession);
   const startNewSession = useTimelineStore((state) => state.startNewSession);
   const sessionId = useTimelineStore((state) => state.sessionId);
   const eventCount = useTimelineStore((state) => state.getEventCount());
+  const isRecording = useTimelineStore((state) => state.isRecording);
   const [exportStatus, setExportStatus] = useState<'idle' | 'exporting' | 'success' | 'error'>('idle');
 
   const handleExportTrace = () => {
@@ -68,15 +102,26 @@ export function AppHeader({ isRecording }: AppHeaderProps) {
     }
   };
 
+  // Determine styling based on variant
+  const headerClasses =
+    variant === 'dark'
+      ? 'bg-slate-800 text-white'
+      : 'bg-white border-b border-gray-200 shadow-sm';
+
+  const titleClasses = variant === 'dark' ? 'text-sm font-semibold' : 'text-2xl font-bold text-gray-900';
+  const descriptionClasses = 'text-sm text-gray-600 mt-1';
+
   return (
-    <div className="bg-slate-800 text-white px-4 py-2.5 flex items-center justify-between flex-shrink-0">
+    <div className={`${headerClasses} px-4 py-${variant === 'dark' ? '2.5' : '4'} flex items-center justify-between flex-shrink-0`}>
       {/* App Title */}
-      <div className="text-sm font-semibold flex items-center gap-2.5">
-        🔍 MCP Inspector - Actor-Based Timeline
+      <div>
+        <div className={titleClasses}>{title}</div>
+        {description && <p className={descriptionClasses}>{description}</p>}
       </div>
 
       {/* Controls Group */}
-      <div className="flex items-center gap-3">
+      {showControls && (
+        <div className="flex items-center gap-3">
         {/* Reset Trace Button */}
         <button
           onClick={handleResetTrace}
@@ -139,7 +184,7 @@ export function AppHeader({ isRecording }: AppHeaderProps) {
         </button>
 
         {/* Recording Badge */}
-        {isRecording && (
+        {showRecordingBadge && isRecording && (
           <div className="flex items-center gap-1.5 px-2.5 py-1 bg-red-500/20 border border-red-500 rounded-full text-xs">
             <div
               className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"
@@ -148,7 +193,8 @@ export function AppHeader({ isRecording }: AppHeaderProps) {
             <span>Recording Timeline</span>
           </div>
         )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
