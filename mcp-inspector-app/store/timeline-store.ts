@@ -7,6 +7,7 @@ import { immer } from 'zustand/middleware/immer';
 import type { TimelineStore } from './types';
 import type { TimelineEvent, Phase, Actor } from '../types/domain';
 import { generateSessionId } from '../lib/session';
+import { exportTraceAsMermaid } from '../lib/mermaid-exporter';
 
 /**
  * Create timeline store with auto-enrichment for events
@@ -145,6 +146,17 @@ export const useTimelineStore = create<TimelineStore>()(
         exportedAt: new Date().toISOString(),
       };
       return JSON.stringify(sessionData, null, 2);
+    },
+
+    exportSessionAsMermaid: () => {
+      const state = get();
+      const sessionData = {
+        sessionId: state.sessionId,
+        eventCount: state.events.length,
+        events: state.events,
+        exportedAt: new Date().toISOString(),
+      };
+      return exportTraceAsMermaid(sessionData);
     },
 
     getSessionMetadata: () => {

@@ -49,11 +49,13 @@ export function AppHeader({
   variant = 'dark',
 }: AppHeaderProps) {
   const exportSession = useTimelineStore((state) => state.exportSession);
+  const exportSessionAsMermaid = useTimelineStore((state) => state.exportSessionAsMermaid);
   const startNewSession = useTimelineStore((state) => state.startNewSession);
   const sessionId = useTimelineStore((state) => state.sessionId);
   const eventCount = useTimelineStore((state) => state.getEventCount());
   const isRecording = useTimelineStore((state) => state.isRecording);
   const [exportStatus, setExportStatus] = useState<'idle' | 'exporting' | 'success' | 'error'>('idle');
+  const [mermaidExportStatus, setMermaidExportStatus] = useState<'idle' | 'exporting' | 'success' | 'error'>('idle');
 
   const handleExportTrace = () => {
     try {
@@ -87,6 +89,41 @@ export function AppHeader({
       console.error('Failed to export trace:', error);
       setExportStatus('error');
       setTimeout(() => setExportStatus('idle'), 2000);
+    }
+  };
+
+  const handleExportMermaid = () => {
+    try {
+      setMermaidExportStatus('exporting');
+
+      // Get Markdown with Mermaid diagram from store
+      const markdownData = exportSessionAsMermaid();
+
+      // Create blob and download link
+      const blob = new Blob([markdownData], { type: 'text/markdown' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+
+      // Generate filename with timestamp and session ID
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+      const shortSessionId = sessionId.slice(0, 8);
+      link.download = `mcp-diagram-${timestamp}-${shortSessionId}.md`;
+      link.href = url;
+
+      // Trigger download
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      // Cleanup
+      URL.revokeObjectURL(url);
+
+      setMermaidExportStatus('success');
+      setTimeout(() => setMermaidExportStatus('idle'), 2000);
+    } catch (error) {
+      console.error('Failed to export Mermaid diagram:', error);
+      setMermaidExportStatus('error');
+      setTimeout(() => setMermaidExportStatus('idle'), 2000);
     }
   };
 
@@ -179,6 +216,45 @@ export function AppHeader({
                   {eventCount}
                 </span>
               )}
+            </>
+          )}
+        </button>
+
+        {/* Export Mermaid Button */}
+        <button
+          onClick={handleExportMermaid}
+          disabled={eventCount === 0 || mermaidExportStatus === 'exporting'}
+          className={`
+            flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all
+            ${eventCount === 0 || mermaidExportStatus === 'exporting'
+              ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
+              : 'bg-purple-600 text-white hover:bg-purple-700 hover:shadow-md'
+            }
+          `}
+          title={eventCount === 0 ? 'No events to export' : 'Download sequence diagram as Markdown'}
+        >
+          {mermaidExportStatus === 'exporting' && (
+            <>
+              <span className="animate-spin">⏳</span>
+              <span>Exporting...</span>
+            </>
+          )}
+          {mermaidExportStatus === 'success' && (
+            <>
+              <span>✓</span>
+              <span>Downloaded</span>
+            </>
+          )}
+          {mermaidExportStatus === 'error' && (
+            <>
+              <span>✗</span>
+              <span>Failed</span>
+            </>
+          )}
+          {mermaidExportStatus === 'idle' && (
+            <>
+              <span>📊</span>
+              <span>Export Mermaid</span>
             </>
           )}
         </button>

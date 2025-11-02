@@ -152,6 +152,11 @@ export interface TimelineStore {
   exportSession: () => string;
 
   /**
+   * Export session data as Mermaid sequence diagram in Markdown format
+   */
+  exportSessionAsMermaid: () => string;
+
+  /**
    * Get session metadata
    */
   getSessionMetadata: () => {
