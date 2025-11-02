@@ -18,7 +18,8 @@ import { SuggestedQueries } from '@/components/controls/SuggestedQueries';
 import { SessionControls } from '@/components/controls/SessionControls';
 import { TimelineView } from '@/components/timeline/TimelineView';
 import { LoadingState, type WorkflowPhase } from '@/components/ui/LoadingState';
-import type { TimelineEvent, WorkflowResult } from '@/types/mcp';
+import type { TimelineEvent } from '@/types/domain';
+import type { WorkflowResult } from '@/types/mcp';
 import { v4 as uuidv4 } from 'uuid';
 
 export default function DemoPage() {

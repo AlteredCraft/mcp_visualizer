@@ -276,27 +276,10 @@ See [docs/Module 5 Validation Results.md](docs/Module%205%20Validation%20Results
 - **[MCP Sequence Diagram](docs/MCP%20Sequence%20diagram.md)** - Protocol-compliant sequence diagram
 - **[Event Recording System Diagram](docs/Event%20Recording%20System%20Diagram.md)** - Event architecture and playback support
 
-### Module Validation Reports
-
-The app was built progressively over 11 modules with comprehensive validation at each stage:
-
-- [Module 1: Layout & Grid System](docs/Module%201%20Validation%20Results.md)
-- [Module 2: Event Recording System](docs/Module%202%20Validation%20Results.md)
-- [Module 3: Actor Components](docs/Module%203%20Validation%20Results.md)
-- [Module 4: Communication Lane Components](docs/Module%204%20Validation%20Results.md)
-- [Module 5: Layout Engine](docs/Module%205%20Validation%20Results.md)
-- [Module 6: MCP Integration](docs/Module%206%20Validation%20Results.md)
-- [Module 6B: SSE & Stateful Connections](docs/Module%206B%20Validation%20Results.md) *(Architecture doc: [Module 6B Architecture](docs/Module%206B%20Architecture%20-%20SSE%20and%20Stateful%20Connections.md))*
-- [Module 7: LLM Integration](docs/Module%207%20Validation%20Results.md)
-- [Module 8: Orchestration Engine](docs/Module%208%20Validation%20Results.md)
-- [Module 9: Interactive Features & Polish](docs/Module%209%20Validation%20Results.md)
-- [Module 10: Performance & Testing](docs/Module%2010%20-%20Testing%20and%20Performance%20Validation.md)
-- [Module 11: Actor-Based Timeline](docs/Module%2011%20-%20Actor-Based%20Timeline%20Implementation.md)
 
 ### Visual Design
 
-- **[Mockups](docs/Mockups.md)** - Initial design mockups
-- **[Interactive HTML Mockup](docs/mcp-inspector-actor-based.html)** - Static HTML prototype
+- **[Original Interactive HTML Mockup](docs/mcp-inspector-actor-based.html)** - Static HTML prototype
 
 ## Development
 
