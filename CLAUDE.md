@@ -6,7 +6,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **MCP Inspector Teaching App** - An educational tool that visualizes Model Context Protocol (MCP) communication between an LLM-powered chat interface and MCP servers. The goal is to teach users how MCP orchestrates tool calling through transparent, real-time message flow visualization.
 
-This is an early-stage project (Python 3.13+) with extensive design documentation but minimal code implementation.
+**Technology**: Next.js 15 (App Router), TypeScript, Zustand, Tailwind CSS
+
+**Status**: Production-ready with comprehensive test coverage (49 passing tests) and modular architecture (11 completed modules).
+
+For getting started, installation, and project structure, see [README.md](mcp-inspector-app/README.md).
 
 ## Architecture
 
@@ -14,11 +18,17 @@ This is an early-stage project (Python 3.13+) with extensive design documentatio
 
 The application uses an **actor-based architecture** that mirrors sequence diagrams, with strict vertical alignment:
 
-- **Column 1 (20%)**: Host App Actor - Chat interface and console logs
-- **Column 2 (15%)**: Communication Lane (ingress/egress to LLM)
-- **Column 3 (15%)**: LLM Actor - Inference service processing
-- **Column 4 (15%)**: Communication Lane (ingress/egress to MCP Server)
-- **Column 5 (35%)**: MCP Server Actor - Server operations and external API calls
+```
+┌─────────────┬──────────────┬──────────────┬──────────────┬─────────────────┐
+│  Host App   │  Host ↔ LLM  │     LLM      │  Host ↔ MCP  │   MCP Server    │
+│    (20%)    │    (15%)     │    (15%)     │    (15%)     │      (35%)      │
+├─────────────┼──────────────┼──────────────┼──────────────┼─────────────────┤
+│ Chat UI     │ Message      │ Inference    │ Message      │ Tool execution  │
+│ Console     │ Cards        │ Processing   │ Cards        │ External APIs   │
+│ logs        │ (ingress/    │              │ (ingress/    │ Console logs    │
+│             │  egress)     │              │  egress)     │                 │
+└─────────────┴──────────────┴──────────────┴──────────────┴─────────────────┘
+```
 
 **Critical Design Principle**: The LLM never directly communicates with MCP servers. The Host App orchestrates all communication. This is the primary pedagogical point of the visualization.
 
@@ -74,6 +84,21 @@ All events (protocol messages, internal operations, console logs) are recorded w
 
 This structure supports future playback and step-through features.
 
+## Shared Components Architecture
+
+The application uses shared components to eliminate duplication between root (`/`) and demo (`/demo`) implementations:
+
+### Shared Components
+- **`hooks/useSSEConnection.ts`**: Centralized SSE connection logic
+- **`components/shared/ChatInterface.tsx`**: Minimal & full variants for chat UI
+- **`components/shared/StatsDisplay.tsx`**: Statusbar & panel variants for stats
+- **`components/timeline/AppHeader.tsx`**: Dark & light variants with customization props
+
+### State Management
+- **Zustand store**: Single source of truth for `events`, `chatHistory`, `workflowPhase`, `isExecuting`
+- Both root and demo pages use the same store
+- No local state duplication
+
 ## Pre-configured MCP Server
 
 **AWS Documentation MCP Server** (https://github.com/awslabs/aws-documentation-mcp-server)
@@ -116,7 +141,7 @@ This structure supports future playback and step-through features.
 - **Lane components**: Communication lane components for message cards
 - **Spacer component**: Reusable component for empty cells maintaining alignment
 - **Event bus**: Centralized event dispatcher
-- **Layout engine**: Grid system that automatically inserts spacer blocks
+- **Layout engine**: Grid system that automatically inserts spacer blocks (`lib/layout-engine.ts`)
 
 ### Message Interactions
 - Click message card to expand/collapse full JSON payload
@@ -124,22 +149,13 @@ This structure supports future playback and step-through features.
 - Expanded: Shows formatted JSON with syntax highlighting
 - Hover: Subtle elevation and shadow
 
-## Development Priorities
-
-1. **Phase 1**: Five-column grid with vertical alignment and spacer blocks
-2. **Phase 2**: Message recording and event storage
-3. **Phase 3**: Actor and lane rendering with automatic spacer block insertion
-4. **Phase 4**: Interactive features (expand/collapse, syntax highlighting)
-5. **Phase 5**: Live learning experience (AWS MCP server integration, suggested queries)
-6. **Phase 6**: Polish and testing (100+ events performance testing)
-
 ## Testing & Validation
 
 **Use Chrome DevTools MCP Server for all UI validation.** After implementing each feature or module:
 
 Note: If you receive a response from the DevTools MCP server to the effect: "The browser is already running for ...". Pause and ask the user to close the existing browser instance before proceeding.
 
-1. **Start the dev server** and navigate to `http://localhost:3000` using `mcp__chrome-devtools__navigate_page`
+1. **Start the dev server** and navigate to `http://localhost:3001` using `mcp__chrome-devtools__navigate_page`
 2. **Take screenshots** (`take_screenshot`) to verify visual rendering against mockups
 3. **Take snapshots** (`take_snapshot`) to extract DOM structure and element positions
 4. **Run validation scripts** (`evaluate_script`) to programmatically verify:
@@ -155,6 +171,7 @@ Note: If you receive a response from the DevTools MCP server to the effect: "The
 
 ## Key Documentation
 
+- [README.md](mcp-inspector-app/README.md) - Main developer documentation, getting started, and project structure
 - [docs/MCP Inspector Teaching App - MVP Product Requirements Document.md](docs/MCP%20Inspector%20Teaching%20App%20-%20MVP%20Product%20Requirements%20Document.md) - Complete MVP specification with detailed requirements
 - [docs/MCP Sequence diagram.md](docs/MCP%20Sequence%20diagram.md) - Protocol-compliant sequence diagram showing all five phases
 - [docs/Mockups.md](docs/Mockups.md) - Visual mockups
@@ -167,3 +184,5 @@ Note: If you receive a response from the DevTools MCP server to the effect: "The
 3. **Record everything**: All events must be captured for future playback
 4. **Two LLM calls**: Always show planning inference separate from synthesis inference
 5. **Host App orchestrates everything**: Make this visually obvious through the column layout
+6. **Use shared components**: Don't duplicate code between root and demo implementations
+7. **Zustand as single source of truth**: Both pages use the same store, no local state duplication
