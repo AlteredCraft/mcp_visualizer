@@ -1,0 +1,34 @@
+{
+  "servers": [
+    {
+      "id": "aws-docs",
+      "name": "AWS Documentation",
+      "description": "Search and retrieve AWS service documentation",
+      "command": "uvx",
+      "args": ["awslabs.aws-documentation-mcp-server@latest"],
+      "env": {
+        "FASTMCP_LOG_LEVEL": "ERROR",
+        "AWS_DOCUMENTATION_PARTITION": "aws"
+      },
+      "enabled": true,
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "updatedAt": "2025-01-01T00:00:00.000Z",
+      "metadata": {
+        "expectedTools": [
+          {
+            "name": "search_documentation",
+            "description": "Search AWS documentation"
+          },
+          {
+            "name": "read_documentation",
+            "description": "Read specific AWS documentation"
+          },
+          {
+            "name": "recommend",
+            "description": "Get AWS service recommendations"
+          }
+        ]
+      }
+    }
+  ]
+}

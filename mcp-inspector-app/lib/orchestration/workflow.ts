@@ -26,7 +26,7 @@ import {
   executeSynthesisInference,
   executeSingleTool
 } from '../llm/inference';
-import { AWS_DOCS_SERVER_CONFIG } from '../mcp/aws-docs-server';
+import { mcpServerStorage, toMCPServerConfig } from '../storage/mcp-servers';
 import type { MCPTool } from '@/types/mcp';
 
 /**
@@ -114,7 +114,28 @@ export async function executeWorkflow(
         }
       });
 
-      await mcpClient.connect(AWS_DOCS_SERVER_CONFIG);
+      // Get first enabled server from storage
+      const servers = await mcpServerStorage.findEnabled();
+      if (servers.length === 0) {
+        throw new Error('No enabled MCP servers found in storage');
+      }
+
+      const server = servers[0];
+      const config = toMCPServerConfig(server);
+
+      mcpClient.recordEvent({
+        eventType: 'console_log',
+        actor: 'host_app',
+        logLevel: 'info',
+        logMessage: `Using server: ${server.name}`,
+        badgeType: 'SYSTEM',
+        metadata: {
+          phase: 'initialization',
+          messageType: 'server_selected'
+        }
+      });
+
+      await mcpClient.connect(config);
 
       mcpClient.recordEvent({
         eventType: 'console_log',
