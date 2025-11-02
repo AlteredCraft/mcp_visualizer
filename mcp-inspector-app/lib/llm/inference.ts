@@ -274,12 +274,15 @@ export async function executeSingleTool(
   });
 
   // Record: MCP tools/call request (protocol message)
+  const toolCallRequestTime = Date.now();
   mcpClient.recordEvent({
     eventType: 'protocol_message',
     actor: 'host_app',
     direction: 'sent',
     lane: 'host_mcp',
     message: {
+      jsonrpc: '2.0',
+      id: 3,
       method: 'tools/call',
       params: {
         name: toolName,
@@ -288,16 +291,17 @@ export async function executeSingleTool(
     },
     metadata: {
       phase: 'execution',
-      messageType: 'mcp_request'
+      messageType: 'tools_call_request'
     }
   });
 
   // Record: MCP server processing
   mcpClient.recordEvent({
-    eventType: 'internal_operation',
+    eventType: 'console_log',
     actor: 'mcp_server',
-    operationType: 'tool_execution',
-    description: `Executing ${toolName}...`,
+    logLevel: 'info',
+    logMessage: `Executing ${toolName}...`,
+    badgeType: 'SERVER',
     metadata: {
       phase: 'execution',
       messageType: 'server_processing'
@@ -306,14 +310,17 @@ export async function executeSingleTool(
 
   // Execute tool via MCP client
   const result = await mcpClient.callTool(toolName, toolArgs);
+  const toolCallProcessingTime = Date.now() - toolCallRequestTime;
 
   // Record: MCP tools/call response (protocol message)
   mcpClient.recordEvent({
     eventType: 'protocol_message',
-    actor: 'host_app',
+    actor: 'mcp_server',
     direction: 'received',
     lane: 'host_mcp',
     message: {
+      jsonrpc: '2.0',
+      id: 3,
       result: {
         content: result.content,
         isError: result.isError || false
@@ -321,7 +328,8 @@ export async function executeSingleTool(
     },
     metadata: {
       phase: 'execution',
-      messageType: 'mcp_response'
+      messageType: 'tools_call_response',
+      processingTime: toolCallProcessingTime
     }
   });
 

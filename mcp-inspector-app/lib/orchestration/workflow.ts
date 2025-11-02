@@ -160,8 +160,64 @@ export async function executeWorkflow(
       }
     });
 
+    // Record tools/list request (protocol message in Host ↔ MCP lane)
+    const toolsListRequestTime = Date.now();
+    mcpClient.recordEvent({
+      eventType: 'protocol_message',
+      actor: 'host_app',
+      direction: 'sent',
+      lane: 'host_mcp',
+      message: {
+        jsonrpc: '2.0',
+        id: 2,
+        method: 'tools/list'
+      },
+      metadata: {
+        phase: 'discovery',
+        messageType: 'tools_list_request'
+      }
+    });
+
+    // Server-side log: processing tools/list
+    mcpClient.recordEvent({
+      eventType: 'console_log',
+      actor: 'mcp_server',
+      logLevel: 'info',
+      logMessage: 'Listing available tools...',
+      badgeType: 'SERVER',
+      metadata: {
+        phase: 'discovery',
+        messageType: 'server_processing'
+      }
+    });
+
     // Discover tools from MCP server
     const mcpTools: MCPTool[] = await mcpClient.listTools();
+    const toolsListProcessingTime = Date.now() - toolsListRequestTime;
+
+    // Record tools/list response (protocol message in Host ↔ MCP lane)
+    mcpClient.recordEvent({
+      eventType: 'protocol_message',
+      actor: 'mcp_server',
+      direction: 'received',
+      lane: 'host_mcp',
+      message: {
+        jsonrpc: '2.0',
+        id: 2,
+        result: {
+          tools: mcpTools.map(tool => ({
+            name: tool.name,
+            description: tool.description,
+            inputSchema: tool.inputSchema
+          }))
+        }
+      },
+      metadata: {
+        phase: 'discovery',
+        messageType: 'tools_list_response',
+        processingTime: toolsListProcessingTime
+      }
+    });
 
     mcpClient.recordEvent({
       eventType: 'console_log',
