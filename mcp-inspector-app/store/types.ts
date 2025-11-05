@@ -26,6 +26,16 @@ export interface ChatMessage {
 }
 
 /**
+ * Token usage tracking for a single LLM inference
+ */
+export interface TokenUsage {
+  inputTokens: number;
+  outputTokens: number;
+  timestamp: number;
+  phase?: Phase;
+}
+
+/**
  * Timeline store state and actions
  */
 export interface TimelineStore {
@@ -67,6 +77,21 @@ export interface TimelineStore {
    * Whether a workflow is currently executing
    */
   isExecuting: boolean;
+
+  /**
+   * Total input tokens used across all LLM inferences in this session
+   */
+  totalInputTokens: number;
+
+  /**
+   * Total output tokens generated across all LLM inferences in this session
+   */
+  totalOutputTokens: number;
+
+  /**
+   * Detailed token usage history for each LLM inference
+   */
+  tokenHistory: TokenUsage[];
 
   // ============================================================================
   // Actions
@@ -122,6 +147,21 @@ export interface TimelineStore {
    */
   setExecuting: (isExecuting: boolean) => void;
 
+  /**
+   * Add token usage from an LLM inference
+   */
+  addTokenUsage: (usage: Omit<TokenUsage, 'timestamp'>) => void;
+
+  /**
+   * Get total token count (input + output)
+   */
+  getTotalTokens: () => number;
+
+  /**
+   * Get token usage by phase
+   */
+  getTokensByPhase: (phase: Phase) => { inputTokens: number; outputTokens: number };
+
   // ============================================================================
   // Selectors (Query Functions)
   // ============================================================================
@@ -165,5 +205,8 @@ export interface TimelineStore {
     startTime: number | null;
     endTime: number | null;
     duration: number | null;
+    totalInputTokens: number;
+    totalOutputTokens: number;
+    totalTokens: number;
   };
 }

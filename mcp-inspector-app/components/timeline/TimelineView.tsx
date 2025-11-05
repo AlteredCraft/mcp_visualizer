@@ -38,14 +38,14 @@ export function TimelineView() {
       {/* Dark header with recording badge */}
       <AppHeader showRecordingBadge={true} />
 
+      {/* Status bar with connection/event stats - positioned below header */}
+      <StatsDisplay variant="statusbar" />
+
       {/* Main timeline with five-column grid */}
       <TimelineContainer rows={rows} />
 
       {/* Bottom chat input spanning all columns */}
       <ChatInterface variant="minimal" />
-
-      {/* Status bar with connection/event stats */}
-      <StatsDisplay variant="statusbar" />
     </div>
   );
 }

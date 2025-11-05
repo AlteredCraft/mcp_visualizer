@@ -26,6 +26,9 @@ export const useTimelineStore = create<TimelineStore>()(
     chatHistory: [],
     workflowPhase: 'idle' as const,
     isExecuting: false,
+    totalInputTokens: 0,
+    totalOutputTokens: 0,
+    tokenHistory: [],
 
     // ============================================================================
     // Actions
@@ -67,6 +70,9 @@ export const useTimelineStore = create<TimelineStore>()(
         state.currentSequence = 0;
         state.chatHistory = [];
         state.workflowPhase = 'idle';
+        state.totalInputTokens = 0;
+        state.totalOutputTokens = 0;
+        state.tokenHistory = [];
       });
     },
 
@@ -79,6 +85,9 @@ export const useTimelineStore = create<TimelineStore>()(
         state.chatHistory = [];
         state.workflowPhase = 'idle';
         state.isExecuting = false;
+        state.totalInputTokens = 0;
+        state.totalOutputTokens = 0;
+        state.tokenHistory = [];
       });
     },
 
@@ -110,6 +119,35 @@ export const useTimelineStore = create<TimelineStore>()(
       set((state) => {
         state.isExecuting = isExecuting;
       });
+    },
+
+    addTokenUsage: (usage) => {
+      set((state) => {
+        const tokenUsage = {
+          ...usage,
+          timestamp: Date.now(),
+        };
+        state.tokenHistory.push(tokenUsage);
+        state.totalInputTokens += usage.inputTokens;
+        state.totalOutputTokens += usage.outputTokens;
+      });
+    },
+
+    getTotalTokens: () => {
+      const state = get();
+      return state.totalInputTokens + state.totalOutputTokens;
+    },
+
+    getTokensByPhase: (phase) => {
+      const state = get();
+      const phaseTokens = state.tokenHistory.filter((usage) => usage.phase === phase);
+      return phaseTokens.reduce(
+        (acc, usage) => ({
+          inputTokens: acc.inputTokens + usage.inputTokens,
+          outputTokens: acc.outputTokens + usage.outputTokens,
+        }),
+        { inputTokens: 0, outputTokens: 0 }
+      );
     },
 
     // ============================================================================
@@ -170,6 +208,9 @@ export const useTimelineStore = create<TimelineStore>()(
           startTime: null,
           endTime: null,
           duration: null,
+          totalInputTokens: state.totalInputTokens,
+          totalOutputTokens: state.totalOutputTokens,
+          totalTokens: state.totalInputTokens + state.totalOutputTokens,
         };
       }
 
@@ -182,6 +223,9 @@ export const useTimelineStore = create<TimelineStore>()(
         startTime,
         endTime,
         duration: endTime - startTime,
+        totalInputTokens: state.totalInputTokens,
+        totalOutputTokens: state.totalOutputTokens,
+        totalTokens: state.totalInputTokens + state.totalOutputTokens,
       };
     },
   }))
