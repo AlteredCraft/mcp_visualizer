@@ -8,11 +8,12 @@
 
 import { useEffect, useRef } from 'react';
 import { useTimelineStore } from '@/store/timeline-store';
-import type { TimelineEvent } from '@/types/domain';
+import type { TimelineEvent, ProtocolMessageEvent } from '@/types/domain';
 
 export function useSSEConnection() {
   const addEvent = useTimelineStore((state) => state.addEvent);
   const setWorkflowPhase = useTimelineStore((state) => state.setWorkflowPhase);
+  const addTokenUsage = useTimelineStore((state) => state.addTokenUsage);
   const eventSourceRef = useRef<EventSource | null>(null);
 
   useEffect(() => {
@@ -32,6 +33,28 @@ export function useSSEConnection() {
 
           // Add event to Zustand store (will auto-enrich with sessionId, sequence, timestamp)
           addEvent(timelineEvent);
+
+          // Extract and store token usage from LLM responses
+          if (timelineEvent.eventType === 'protocol_message') {
+            const protocolEvent = timelineEvent as ProtocolMessageEvent;
+            if (
+              protocolEvent.direction === 'received' &&
+              protocolEvent.lane === 'host_llm' &&
+              protocolEvent.message &&
+              typeof protocolEvent.message === 'object' &&
+              'usage' in protocolEvent.message
+            ) {
+              const usage = (protocolEvent.message as any).usage;
+              if (usage && typeof usage === 'object' && 'inputTokens' in usage && 'outputTokens' in usage) {
+                console.log('[useSSEConnection] Capturing token usage:', usage);
+                addTokenUsage({
+                  inputTokens: usage.inputTokens,
+                  outputTokens: usage.outputTokens,
+                  phase: timelineEvent.metadata?.phase,
+                });
+              }
+            }
+          }
 
           // Update workflow phase based on event metadata
           if (timelineEvent.metadata?.phase) {
@@ -70,5 +93,5 @@ export function useSSEConnection() {
         eventSourceRef.current.close();
       }
     };
-  }, [addEvent, setWorkflowPhase]);
+  }, [addEvent, setWorkflowPhase, addTokenUsage]);
 }

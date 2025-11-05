@@ -20,13 +20,22 @@ export function StatsDisplay({ variant }: StatsDisplayProps) {
   const events = useTimelineStore((state) => state.events);
   const chatHistory = useTimelineStore((state) => state.chatHistory);
   const isExecuting = useTimelineStore((state) => state.isExecuting);
+  const totalInputTokens = useTimelineStore((state) => state.totalInputTokens);
+  const totalOutputTokens = useTimelineStore((state) => state.totalOutputTokens);
 
   const eventCount = events.length;
   const duration = events.length > 0 ? events[events.length - 1].timestamp - events[0].timestamp : null;
+  const totalTokens = totalInputTokens + totalOutputTokens;
 
   const formatDuration = (ms: number | null) => {
     if (ms === null) return '0.0s';
     return `${(ms / 1000).toFixed(1)}s`;
+  };
+
+  const formatTokenCount = (count: number) => {
+    if (count === 0) return '0';
+    if (count >= 1000) return `${(count / 1000).toFixed(1)}k`;
+    return count.toString();
   };
 
   if (variant === 'statusbar') {
@@ -47,6 +56,17 @@ export function StatsDisplay({ variant }: StatsDisplayProps) {
 
         {/* Duration */}
         <div>Total: {formatDuration(duration)}</div>
+
+        {/* Token Usage */}
+        {totalTokens > 0 && (
+          <div className="flex items-center gap-2">
+            <span>Tokens:</span>
+            <span className="text-blue-400 font-mono">{formatTokenCount(totalTokens)}</span>
+            <span className="text-gray-500">
+              ({formatTokenCount(totalInputTokens)} in / {formatTokenCount(totalOutputTokens)} out)
+            </span>
+          </div>
+        )}
 
         {/* Recording Indicator */}
         <div className="ml-auto">📝 All events recorded for playback</div>
@@ -78,6 +98,22 @@ export function StatsDisplay({ variant }: StatsDisplayProps) {
             <span className="text-gray-600">Duration:</span>
             <span className="font-mono font-semibold">{formatDuration(duration)}</span>
           </div>
+        )}
+        {totalTokens > 0 && (
+          <>
+            <div className="flex justify-between border-t border-gray-100 pt-2 mt-2">
+              <span className="text-gray-600">Total Tokens:</span>
+              <span className="font-mono font-semibold text-blue-600">{formatTokenCount(totalTokens)}</span>
+            </div>
+            <div className="flex justify-between pl-2">
+              <span className="text-gray-500 text-xs">Input:</span>
+              <span className="font-mono text-xs text-gray-600">{formatTokenCount(totalInputTokens)}</span>
+            </div>
+            <div className="flex justify-between pl-2">
+              <span className="text-gray-500 text-xs">Output:</span>
+              <span className="font-mono text-xs text-gray-600">{formatTokenCount(totalOutputTokens)}</span>
+            </div>
+          </>
         )}
       </div>
     </div>
