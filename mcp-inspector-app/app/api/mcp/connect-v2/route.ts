@@ -3,20 +3,24 @@
  *
  * POST /api/mcp/connect-v2
  *
- * Connects to the AWS Documentation MCP server using the global singleton client.
- * This version properly maintains connection state across multiple API requests.
+ * Connects to an MCP server using the global singleton client.
+ * Server configuration is loaded from storage.
+ *
+ * Request body (optional):
+ * - serverId: string (defaults to first enabled server)
  *
  * Improvements over V1 (/api/mcp/connect):
  * - Uses global singleton (persistent connection)
  * - Lazy initialization (connects on first use)
  * - Events broadcast via SSE (real-time streaming)
  * - Connection survives across multiple requests
+ * - Dynamic server configuration from storage
  */
 
 import { getMCPClient } from '@/lib/mcp/global-client';
-import { AWS_DOCS_SERVER_CONFIG } from '@/lib/mcp/aws-docs-server';
+import { mcpServerStorage, toMCPServerConfig } from '@/lib/storage/mcp-servers';
 
-export async function POST() {
+export async function POST(request: Request) {
   try {
     const mcpClient = getMCPClient();
 
@@ -31,9 +35,56 @@ export async function POST() {
       });
     }
 
+    // Parse request body (optional serverId)
+    let serverId: string | undefined;
+    try {
+      const body = await request.json();
+      serverId = body.serverId;
+    } catch {
+      // No body or invalid JSON - use default server
+    }
+
+    // Get server configuration from storage
+    let server;
+    if (serverId) {
+      server = await mcpServerStorage.findById(serverId);
+      if (!server) {
+        return Response.json(
+          {
+            success: false,
+            error: `Server with ID "${serverId}" not found`,
+          },
+          { status: 404 }
+        );
+      }
+      if (!server.enabled) {
+        return Response.json(
+          {
+            success: false,
+            error: `Server with ID "${serverId}" is disabled`,
+          },
+          { status: 400 }
+        );
+      }
+    } else {
+      // Use first enabled server
+      const servers = await mcpServerStorage.findEnabled();
+      if (servers.length === 0) {
+        return Response.json(
+          {
+            success: false,
+            error: 'No enabled MCP servers found in storage',
+          },
+          { status: 404 }
+        );
+      }
+      server = servers[0];
+    }
+
     // Connect (lazy initialization)
-    console.log('[/api/mcp/connect-v2] Initiating connection...');
-    await mcpClient.connect(AWS_DOCS_SERVER_CONFIG);
+    console.log(`[/api/mcp/connect-v2] Initiating connection to: ${server.name}...`);
+    const config = toMCPServerConfig(server);
+    await mcpClient.connect(config);
 
     const sessionInfo = mcpClient.getSessionInfo();
     console.log('[/api/mcp/connect-v2] Connection successful:', sessionInfo);
@@ -41,6 +92,8 @@ export async function POST() {
     return Response.json({
       success: true,
       message: 'Connected successfully',
+      serverId: server.id,
+      serverName: server.name,
       sessionInfo,
       connectionState: mcpClient.getConnectionState(),
     });
