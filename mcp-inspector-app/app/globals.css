@@ -1,36 +1,42 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #fdfdfa;
+  --foreground: #2f3235;
 }
 
 @theme inline {
   /* Base colors */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-primary: #7671d4;
+  --color-secondary: #a2a1a4;
+
+  /* Surface colors */
+  --color-surface-light: #f5f5f3;
+  --color-surface-medium: #e8e8e6;
 
   /* Message card colors */
-  --color-request: #10B981;
-  --color-response: #3B82F6;
-  --color-notification: #8b5cf6;
-  --color-error: #EF4444;
+  --color-request: #7671d4;
+  --color-response: #a2a1a4;
+  --color-notification: #7671d4;
+  --color-error: #d97171;
 
   /* Console badge colors */
-  --color-badge-user: #f3f4f6;
-  --color-badge-user-text: #6b7280;
-  --color-badge-system: #dbeafe;
-  --color-badge-system-text: #1e40af;
-  --color-badge-internal: #f3f4f6;
-  --color-badge-internal-text: #6b7280;
-  --color-badge-llm: #e0e7ff;
-  --color-badge-llm-text: #3730a3;
-  --color-badge-server: #d1fae5;
-  --color-badge-server-text: #065f46;
-  --color-badge-log: #fef3c7;
-  --color-badge-log-text: #92400e;
-  --color-badge-complete: #f3f4f6;
-  --color-badge-complete-text: #6b7280;
+  --color-badge-user: #f5f5f3;
+  --color-badge-user-text: #a2a1a4;
+  --color-badge-system: #e8e8e6;
+  --color-badge-system-text: #2f3235;
+  --color-badge-internal: #f5f5f3;
+  --color-badge-internal-text: #a2a1a4;
+  --color-badge-llm: #e8e7f5;
+  --color-badge-llm-text: #7671d4;
+  --color-badge-server: #e8e8e6;
+  --color-badge-server-text: #2f3235;
+  --color-badge-log: #f5f5f3;
+  --color-badge-log-text: #a2a1a4;
+  --color-badge-complete: #f5f5f3;
+  --color-badge-complete-text: #a2a1a4;
 
   /* Fonts */
   --font-sans: var(--font-geist-sans);
@@ -39,8 +45,8 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #2f3235;
+    --foreground: #fdfdfa;
   }
 }
 

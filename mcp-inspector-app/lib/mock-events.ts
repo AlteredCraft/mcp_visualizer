@@ -99,7 +99,7 @@ export function generateMockWorkflow(): Array<
     })
   );
 
-  events.push(createSystemLog('Handshake complete ✓', 'initialization'));
+  events.push(createSystemLog('Handshake complete', 'initialization'));
 
   // ==========================================================================
   // PHASE 2: DISCOVERY & CONTEXTUALIZATION
@@ -452,7 +452,7 @@ export function generateMultiToolWorkflow(): Array<
       'User: Look up S3 bucket naming rules and show me related topics'
     )
   );
-  events.push(createSystemLog('Handshake complete ✓', 'initialization'));
+  events.push(createSystemLog('Handshake complete', 'initialization'));
   events.push(createSystemLog('Discovered 3 tool(s)', 'discovery'));
 
   // Selection phase - LLM selects TWO tools

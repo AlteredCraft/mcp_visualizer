@@ -13,6 +13,7 @@
 
 import { useState } from 'react';
 import { useTimelineStore } from '@/store/timeline-store';
+import { Search, RefreshCw, Loader2, Check, X, Save, BarChart3 } from 'lucide-react';
 
 interface AppHeaderProps {
   /**
@@ -42,7 +43,7 @@ interface AppHeaderProps {
 }
 
 export function AppHeader({
-  title = '🔍 MCP Inspector - Actor-Based Timeline',
+  title = 'MCP Inspector - Actor-Based Timeline',
   description,
   showRecordingBadge = false,
   showControls = true,
@@ -151,9 +152,12 @@ export function AppHeader({
   return (
     <div className={`${headerClasses} px-4 py-${variant === 'dark' ? '2.5' : '4'} flex items-center justify-between flex-shrink-0`}>
       {/* App Title */}
-      <div>
-        <div className={titleClasses}>{title}</div>
-        {description && <p className={descriptionClasses}>{description}</p>}
+      <div className="flex items-center gap-2">
+        <Search className="w-5 h-5" />
+        <div>
+          <div className={titleClasses}>{title}</div>
+          {description && <p className={descriptionClasses}>{description}</p>}
+        </div>
       </div>
 
       {/* Controls Group */}
@@ -166,13 +170,17 @@ export function AppHeader({
           className={`
             flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all
             ${eventCount === 0
-              ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
-              : 'bg-red-600 text-white hover:bg-red-700 hover:shadow-md'
+              ? 'opacity-50 cursor-not-allowed'
+              : 'hover:opacity-80 hover:shadow-md'
             }
           `}
+          style={{
+            backgroundColor: eventCount === 0 ? '#a2a1a4' : '#d97171',
+            color: '#fdfdfa'
+          }}
           title={eventCount === 0 ? 'No events to reset' : 'Clear all events and start a new session'}
         >
-          <span>🔄</span>
+          <RefreshCw className="w-3.5 h-3.5" />
           <span>Reset Trace</span>
         </button>
 
@@ -183,36 +191,40 @@ export function AppHeader({
           className={`
             flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all
             ${eventCount === 0 || exportStatus === 'exporting'
-              ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
-              : 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow-md'
+              ? 'opacity-50 cursor-not-allowed'
+              : 'hover:opacity-80 hover:shadow-md'
             }
           `}
+          style={{
+            backgroundColor: eventCount === 0 || exportStatus === 'exporting' ? '#a2a1a4' : '#7671d4',
+            color: '#fdfdfa'
+          }}
           title={eventCount === 0 ? 'No events to export' : 'Download trace as JSON file'}
         >
           {exportStatus === 'exporting' && (
             <>
-              <span className="animate-spin">⏳</span>
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
               <span>Exporting...</span>
             </>
           )}
           {exportStatus === 'success' && (
             <>
-              <span>✓</span>
+              <Check className="w-3.5 h-3.5" />
               <span>Downloaded</span>
             </>
           )}
           {exportStatus === 'error' && (
             <>
-              <span>✗</span>
+              <X className="w-3.5 h-3.5" />
               <span>Failed</span>
             </>
           )}
           {exportStatus === 'idle' && (
             <>
-              <span>💾</span>
+              <Save className="w-3.5 h-3.5" />
               <span>Export Trace</span>
               {eventCount > 0 && (
-                <span className="ml-1 px-1.5 py-0.5 bg-blue-700/50 rounded text-xs">
+                <span className="ml-1 px-1.5 py-0.5 rounded text-xs" style={{backgroundColor: 'rgba(118, 113, 212, 0.3)'}}>
                   {eventCount}
                 </span>
               )}
@@ -227,33 +239,37 @@ export function AppHeader({
           className={`
             flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all
             ${eventCount === 0 || mermaidExportStatus === 'exporting'
-              ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
-              : 'bg-purple-600 text-white hover:bg-purple-700 hover:shadow-md'
+              ? 'opacity-50 cursor-not-allowed'
+              : 'hover:opacity-80 hover:shadow-md'
             }
           `}
+          style={{
+            backgroundColor: eventCount === 0 || mermaidExportStatus === 'exporting' ? '#a2a1a4' : '#7671d4',
+            color: '#fdfdfa'
+          }}
           title={eventCount === 0 ? 'No events to export' : 'Download sequence diagram as Markdown'}
         >
           {mermaidExportStatus === 'exporting' && (
             <>
-              <span className="animate-spin">⏳</span>
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
               <span>Exporting...</span>
             </>
           )}
           {mermaidExportStatus === 'success' && (
             <>
-              <span>✓</span>
+              <Check className="w-3.5 h-3.5" />
               <span>Downloaded</span>
             </>
           )}
           {mermaidExportStatus === 'error' && (
             <>
-              <span>✗</span>
+              <X className="w-3.5 h-3.5" />
               <span>Failed</span>
             </>
           )}
           {mermaidExportStatus === 'idle' && (
             <>
-              <span>📊</span>
+              <BarChart3 className="w-3.5 h-3.5" />
               <span>Export Mermaid</span>
             </>
           )}

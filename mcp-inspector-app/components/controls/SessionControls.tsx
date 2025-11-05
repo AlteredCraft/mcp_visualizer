@@ -11,6 +11,7 @@
 
 import React, { useState, useEffect } from 'react';
 import type { TimelineEvent } from '@/types/mcp';
+import { Check, X, Copy, Trash2 } from 'lucide-react';
 
 interface SessionControlsProps {
   events: TimelineEvent[];
@@ -85,16 +86,35 @@ export function SessionControls({
           onClick={handleExportSession}
           disabled={disabled || events.length === 0}
           className={`
-            w-full px-4 py-2 rounded-md text-sm font-medium transition-all
+            w-full px-4 py-2 rounded-md text-sm font-medium transition-all flex items-center justify-center gap-2
             ${disabled || events.length === 0
-              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-              : 'bg-blue-500 text-white hover:bg-blue-600 hover:shadow-md'
+              ? 'opacity-50 cursor-not-allowed'
+              : 'hover:opacity-80 hover:shadow-md'
             }
           `}
+          style={{
+            backgroundColor: disabled || events.length === 0 ? '#a2a1a4' : '#7671d4',
+            color: '#fdfdfa'
+          }}
         >
-          {copyStatus === 'copied' && '✓ Copied to Clipboard'}
-          {copyStatus === 'error' && '✗ Copy Failed'}
-          {copyStatus === 'idle' && 'Export Session Log'}
+          {copyStatus === 'copied' && (
+            <>
+              <Check className="w-4 h-4" />
+              <span>Copied to Clipboard</span>
+            </>
+          )}
+          {copyStatus === 'error' && (
+            <>
+              <X className="w-4 h-4" />
+              <span>Copy Failed</span>
+            </>
+          )}
+          {copyStatus === 'idle' && (
+            <>
+              <Copy className="w-4 h-4" />
+              <span>Export Session Log</span>
+            </>
+          )}
         </button>
 
         {/* Clear Button */}
@@ -102,14 +122,19 @@ export function SessionControls({
           onClick={handleClear}
           disabled={disabled || events.length === 0}
           className={`
-            w-full px-4 py-2 rounded-md text-sm font-medium transition-all
+            w-full px-4 py-2 rounded-md text-sm font-medium transition-all flex items-center justify-center gap-2
             ${disabled || events.length === 0
-              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-              : 'bg-red-500 text-white hover:bg-red-600 hover:shadow-md'
+              ? 'opacity-50 cursor-not-allowed'
+              : 'hover:opacity-80 hover:shadow-md'
             }
           `}
+          style={{
+            backgroundColor: disabled || events.length === 0 ? '#a2a1a4' : '#d97171',
+            color: '#fdfdfa'
+          }}
         >
-          Clear Timeline
+          <Trash2 className="w-4 h-4" />
+          <span>Clear Timeline</span>
         </button>
       </div>
 

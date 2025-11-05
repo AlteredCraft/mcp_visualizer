@@ -103,7 +103,7 @@ export class MCPClient {
 
       // Record completion
       recordMCPLog(
-        'Handshake complete ✓',
+        'Handshake complete',
         'host_app',
         'initialization',
         'info'
