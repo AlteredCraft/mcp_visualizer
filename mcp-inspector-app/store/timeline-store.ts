@@ -8,6 +8,7 @@ import type { TimelineStore } from './types';
 import type { TimelineEvent, Phase, Actor } from '../types/domain';
 import { generateSessionId } from '../lib/session';
 import { exportTraceAsMermaid } from '../lib/mermaid-exporter';
+import { exportTraceAsOTLPJSON } from '../lib/otlp-exporter';
 
 /**
  * Create timeline store with auto-enrichment for events
@@ -157,6 +158,17 @@ export const useTimelineStore = create<TimelineStore>()(
         exportedAt: new Date().toISOString(),
       };
       return exportTraceAsMermaid(sessionData);
+    },
+
+    exportSessionAsOTLP: () => {
+      const state = get();
+      const sessionData = {
+        sessionId: state.sessionId,
+        eventCount: state.events.length,
+        events: state.events,
+        exportedAt: new Date().toISOString(),
+      };
+      return exportTraceAsOTLPJSON(sessionData);
     },
 
     getSessionMetadata: () => {

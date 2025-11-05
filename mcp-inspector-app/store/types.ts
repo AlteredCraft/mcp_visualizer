@@ -157,6 +157,11 @@ export interface TimelineStore {
   exportSessionAsMermaid: () => string;
 
   /**
+   * Export session data as OTLP (OpenTelemetry Protocol) JSON
+   */
+  exportSessionAsOTLP: () => string;
+
+  /**
    * Get session metadata
    */
   getSessionMetadata: () => {
