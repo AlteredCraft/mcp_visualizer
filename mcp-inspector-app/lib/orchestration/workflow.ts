@@ -141,7 +141,7 @@ export async function executeWorkflow(
         eventType: 'console_log',
         actor: 'host_app',
         logLevel: 'info',
-        logMessage: 'Handshake complete ✓',
+        logMessage: 'Handshake complete',
         badgeType: 'SYSTEM',
         metadata: {
           phase: 'initialization',
@@ -271,7 +271,7 @@ export async function executeWorkflow(
       eventType: 'console_log',
       actor: 'host_app',
       logLevel: 'info',
-      logMessage: 'Tool schemas formatted for LLM ✓',
+      logMessage: 'Tool schemas formatted for LLM',
       badgeType: 'INTERNAL',
       metadata: {
         phase: 'discovery',

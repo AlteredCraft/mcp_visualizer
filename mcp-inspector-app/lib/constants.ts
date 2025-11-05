@@ -5,6 +5,21 @@
 import type { ConsoleBadgeType } from '@/types/domain';
 
 // ============================================================================
+// Color Palette
+// ============================================================================
+
+export const COLOR_PALETTE = {
+  background: '#fdfdfa',    // Light cream
+  foreground: '#2f3235',    // Dark charcoal
+  primary: '#7671d4',       // Purple accent
+  secondary: '#a2a1a4',     // Medium gray
+  // Derived colors for UI elements
+  surfaceLight: '#f5f5f3',  // Slightly darker than background
+  surfaceMedium: '#e8e8e6', // Medium surface
+  error: '#d97171',         // Muted red for errors
+} as const;
+
+// ============================================================================
 // Console Badge Colors
 // ============================================================================
 
@@ -16,38 +31,38 @@ export interface BadgeStyle {
 
 export const CONSOLE_BADGE_STYLES: Record<ConsoleBadgeType, BadgeStyle> = {
   USER_INPUT: {
-    background: '#f3f4f6',
-    textColor: '#6b7280',
+    background: COLOR_PALETTE.surfaceLight,
+    textColor: COLOR_PALETTE.secondary,
     label: 'USER INPUT',
   },
   SYSTEM: {
-    background: '#dbeafe',
-    textColor: '#1e40af',
+    background: COLOR_PALETTE.surfaceMedium,
+    textColor: COLOR_PALETTE.foreground,
     label: 'SYSTEM',
   },
   INTERNAL: {
-    background: '#f3f4f6',
-    textColor: '#6b7280',
+    background: COLOR_PALETTE.surfaceLight,
+    textColor: COLOR_PALETTE.secondary,
     label: 'INTERNAL',
   },
   LLM: {
-    background: '#e0e7ff',
-    textColor: '#3730a3',
+    background: '#e8e7f5', // Light purple tint
+    textColor: COLOR_PALETTE.primary,
     label: 'LLM',
   },
   SERVER: {
-    background: '#d1fae5',
-    textColor: '#065f46',
+    background: COLOR_PALETTE.surfaceMedium,
+    textColor: COLOR_PALETTE.foreground,
     label: 'SERVER',
   },
   LOG: {
-    background: '#fef3c7',
-    textColor: '#92400e',
+    background: COLOR_PALETTE.surfaceLight,
+    textColor: COLOR_PALETTE.secondary,
     label: 'LOG',
   },
   COMPLETE: {
-    background: '#f3f4f6',
-    textColor: '#6b7280',
+    background: COLOR_PALETTE.surfaceLight,
+    textColor: COLOR_PALETTE.secondary,
     label: 'COMPLETE',
   },
 };
@@ -58,19 +73,19 @@ export const CONSOLE_BADGE_STYLES: Record<ConsoleBadgeType, BadgeStyle> = {
 
 export const MESSAGE_CARD_COLORS = {
   request: {
-    borderColor: '#10B981', // Green
+    borderColor: COLOR_PALETTE.primary, // Purple
     borderSide: 'left',
   },
   response: {
-    borderColor: '#3B82F6', // Blue
+    borderColor: COLOR_PALETTE.secondary, // Gray
     borderSide: 'right',
   },
   notification: {
-    borderColor: '#8b5cf6', // Purple
+    borderColor: COLOR_PALETTE.primary, // Purple
     borderSide: 'left',
   },
   error: {
-    borderColor: '#EF4444', // Red
+    borderColor: COLOR_PALETTE.error, // Muted red
     borderSide: 'all',
   },
 } as const;
@@ -81,13 +96,13 @@ export const MESSAGE_CARD_COLORS = {
 
 export const CHAT_BUBBLE_COLORS = {
   user: {
-    background: '#2563eb', // Blue
+    background: COLOR_PALETTE.primary, // Purple
     textColor: '#ffffff',
     align: 'right',
   },
   assistant: {
-    background: '#f0f0f0', // Gray
-    textColor: '#000000',
+    background: COLOR_PALETTE.background, // Light cream
+    textColor: COLOR_PALETTE.foreground,  // Dark charcoal
     align: 'left',
   },
 } as const;

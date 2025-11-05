@@ -199,12 +199,12 @@ describe('Event Builder', () => {
     });
 
     it('createSystemLog should create system console log', () => {
-      const event = createSystemLog('Handshake complete ✓', 'initialization');
+      const event = createSystemLog('Handshake complete', 'initialization');
 
       expect(event.eventType).toBe('console_log');
       expect(event.actor).toBe('host_app');
       expect(event.badgeType).toBe('SYSTEM');
-      expect(event.logMessage).toBe('Handshake complete ✓');
+      expect(event.logMessage).toBe('Handshake complete');
       expect(event.metadata.phase).toBe('initialization');
     });
 
