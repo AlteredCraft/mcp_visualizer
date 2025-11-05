@@ -145,7 +145,7 @@ export function AppHeader({
       ? 'bg-slate-800 text-white'
       : 'bg-white border-b border-gray-200 shadow-sm';
 
-  const titleClasses = variant === 'dark' ? 'text-sm font-semibold' : 'text-2xl font-bold text-gray-900';
+  const titleClasses = variant === 'dark' ? 'text-2xl font-semibold' : 'text-2xl font-bold text-gray-900';
   const descriptionClasses = 'text-sm text-gray-600 mt-1';
 
   return (
@@ -258,17 +258,6 @@ export function AppHeader({
             </>
           )}
         </button>
-
-        {/* Recording Badge */}
-        {showRecordingBadge && isRecording && (
-          <div className="flex items-center gap-1.5 px-2.5 py-1 bg-red-500/20 border border-red-500 rounded-full text-xs">
-            <div
-              className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"
-              style={{ animation: 'pulse 2s infinite' }}
-            />
-            <span>Recording Timeline</span>
-          </div>
-        )}
         </div>
       )}
     </div>

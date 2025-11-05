@@ -41,7 +41,7 @@ export function StatsDisplay({ variant }: StatsDisplayProps) {
   if (variant === 'statusbar') {
     // StatusBar variant: Bottom bar for timeline view
     return (
-      <div className="h-[30px] bg-neutral-800 text-gray-400 flex items-center px-4 text-xs gap-5 flex-shrink-0">
+      <div className="h-[40px] bg-neutral-800 text-gray-400 flex items-center px-4 text-sm gap-5 flex-shrink-0">
         {/* Connection Status */}
         <div className="flex items-center gap-1.5">
           <div className="w-2 h-2 bg-green-500 rounded-full" />
