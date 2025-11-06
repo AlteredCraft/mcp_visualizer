@@ -162,7 +162,7 @@ export async function DELETE(request: Request) {
     console.log(
       `[/api/mcp/connect-v2] Disconnecting... (clearSession: ${clearSession})`
     );
-    await mcpClient.disconnect(clearSession);
+    await mcpClient.disconnect({ clearSession });
 
     return Response.json({
       success: true,

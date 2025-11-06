@@ -166,24 +166,25 @@ export function AppHeader({
 
       try {
         // Disconnect from all MCP servers and clear session state
+        // This clears the event buffer on the server-side singleton
         const response = await fetch('/api/mcp/connect-v2?clearSession=true', {
           method: 'DELETE',
         });
 
         if (!response.ok) {
           console.warn('Failed to disconnect MCP servers:', await response.text());
-          // Continue anyway - the user wants to reset
+          // Continue anyway - the user wants to start fresh
         }
 
-        // Clear UI state and start new session
-        startNewSession();
-
-        // Reload page to ensure clean state (SSE reconnect, fresh UI)
+        // Reload page to reset all state layers:
+        // 1. Server-side: Already cleared above
+        // 2. SSE connection: Closes and reconnects
+        // 3. Client-side: Zustand store resets to initial state
+        // Note: We don't call startNewSession() here because page reload handles it
         window.location.reload();
       } catch (error) {
-        console.error('Error during reset:', error);
-        // Still clear state and reload even if disconnect failed
-        startNewSession();
+        console.error('Error during session reset:', error);
+        // Even if disconnect failed, reload to ensure clean state
         window.location.reload();
       }
     }

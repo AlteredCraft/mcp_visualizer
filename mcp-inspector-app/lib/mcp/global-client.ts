@@ -48,9 +48,14 @@ export class MCPGlobalClient {
   private clients: Map<string, MCPClient>; // serverId -> MCPClient
   private serverConfigs: Map<string, MCPServerConfig>; // serverId -> config
   private toolToServerMap: Map<string, string>; // toolName -> serverId
-  private subscribers: Map<string, EventCallback>;
+  private subscribers: Map<string, EventCallback>; // subscriptionId -> callback
+
+  // Event buffer: Stores last N events for late-joining SSE clients
+  // Use case: If SSE connection drops and reconnects, client gets recent history
+  // Cleared when user starts a new session (disconnect with clearSession: true)
   private eventBuffer: TimelineEvent[];
-  private maxBufferSize = 100;
+  private maxBufferSize = 100; // Keep last 100 events (reasonable for connection recovery)
+
   private currentSessionId: string;
   private currentSequence = 0;
 
@@ -331,11 +336,19 @@ export class MCPGlobalClient {
   /**
    * Disconnect from all servers and clean up resources.
    *
-   * Called by graceful shutdown handlers or manually.
-   * Optionally clears session state (event buffer, session ID, sequence).
+   * @param options - Optional configuration
+   * @param options.clearSession - If true, also clears event buffer and resets session
+   *
+   * Use cases:
+   * - disconnect(): Normal shutdown - keeps session for potential reconnect
+   * - disconnect({ clearSession: true }): Fresh start - clears all session state
    */
-  public async disconnect(clearSession = false): Promise<void> {
-    console.log('[MCPGlobalClient] Disconnecting from all servers...');
+  public async disconnect(options?: { clearSession?: boolean }): Promise<void> {
+    const clearSession = options?.clearSession ?? false;
+
+    console.log(
+      `[MCPGlobalClient] Disconnecting from all servers... (clearSession: ${clearSession})`
+    );
 
     // Close all SSE subscriptions
     const subscriberCount = this.subscribers.size;
@@ -356,12 +369,12 @@ export class MCPGlobalClient {
 
     await Promise.all(disconnectPromises);
 
-    // Clear all maps
+    // Clear connection state
     this.clients.clear();
     this.serverConfigs.clear();
     this.toolToServerMap.clear();
 
-    // Optionally clear session state for fresh start
+    // Clear session state if requested (for fresh start)
     if (clearSession) {
       this.eventBuffer = [];
       this.currentSessionId = this.generateSessionId();
