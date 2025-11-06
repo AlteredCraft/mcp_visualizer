@@ -332,8 +332,9 @@ export class MCPGlobalClient {
    * Disconnect from all servers and clean up resources.
    *
    * Called by graceful shutdown handlers or manually.
+   * Optionally clears session state (event buffer, session ID, sequence).
    */
-  public async disconnect(): Promise<void> {
+  public async disconnect(clearSession = false): Promise<void> {
     console.log('[MCPGlobalClient] Disconnecting from all servers...');
 
     // Close all SSE subscriptions
@@ -359,6 +360,14 @@ export class MCPGlobalClient {
     this.clients.clear();
     this.serverConfigs.clear();
     this.toolToServerMap.clear();
+
+    // Optionally clear session state for fresh start
+    if (clearSession) {
+      this.eventBuffer = [];
+      this.currentSessionId = this.generateSessionId();
+      this.currentSequence = 0;
+      console.log('[MCPGlobalClient] Session state cleared, new session:', this.currentSessionId);
+    }
 
     console.log('[MCPGlobalClient] All servers disconnected');
   }

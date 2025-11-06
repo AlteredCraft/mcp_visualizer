@@ -147,17 +147,29 @@ export async function GET() {
 
 /**
  * DELETE: Gracefully disconnect
+ *
+ * Query parameters:
+ * - clearSession=true: Also clear event buffer and reset session (for fresh start)
  */
-export async function DELETE() {
+export async function DELETE(request: Request) {
   try {
     const mcpClient = getMCPClient();
 
-    console.log('[/api/mcp/connect-v2] Disconnecting...');
-    await mcpClient.disconnect();
+    // Check if we should clear session state
+    const url = new URL(request.url);
+    const clearSession = url.searchParams.get('clearSession') === 'true';
+
+    console.log(
+      `[/api/mcp/connect-v2] Disconnecting... (clearSession: ${clearSession})`
+    );
+    await mcpClient.disconnect(clearSession);
 
     return Response.json({
       success: true,
-      message: 'Disconnected successfully',
+      message: clearSession
+        ? 'Disconnected and session cleared successfully'
+        : 'Disconnected successfully',
+      sessionCleared: clearSession,
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);

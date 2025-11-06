@@ -153,7 +153,7 @@ export function AppHeader({
     if (eventCount === 0 || resetStatus === 'resetting') return;
 
     const confirmed = window.confirm(
-      'Reset trace and reload connections?\n\n' +
+      'Start a new session?\n\n' +
       'This will:\n' +
       '• Clear all recorded events\n' +
       '• Disconnect from all MCP servers\n' +
@@ -165,8 +165,8 @@ export function AppHeader({
       setResetStatus('resetting');
 
       try {
-        // Disconnect from all MCP servers
-        const response = await fetch('/api/mcp/connect-v2', {
+        // Disconnect from all MCP servers and clear session state
+        const response = await fetch('/api/mcp/connect-v2?clearSession=true', {
           method: 'DELETE',
         });
 
@@ -265,7 +265,7 @@ export function AppHeader({
             </div>
           )}
         </div>
-        {/* Reset Trace Button */}
+        {/* Start New Session Button */}
         <button
           onClick={handleResetTrace}
           disabled={eventCount === 0 || resetStatus === 'resetting'}
@@ -280,17 +280,17 @@ export function AppHeader({
             backgroundColor: eventCount === 0 || resetStatus === 'resetting' ? '#a2a1a4' : '#d97171',
             color: '#fdfdfa'
           }}
-          title={eventCount === 0 ? 'No events to reset' : 'Clear events, disconnect servers, and start fresh'}
+          title={eventCount === 0 ? 'No events recorded yet' : 'Start a new session (clears all events and reconnects)'}
         >
           {resetStatus === 'resetting' ? (
             <>
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              <span>Resetting...</span>
+              <span>Starting...</span>
             </>
           ) : (
             <>
               <RefreshCw className="w-3.5 h-3.5" />
-              <span>Reset Trace</span>
+              <span>Start New Session</span>
             </>
           )}
         </button>
