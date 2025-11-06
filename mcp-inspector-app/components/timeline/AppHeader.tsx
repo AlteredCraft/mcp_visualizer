@@ -59,6 +59,7 @@ export function AppHeader({
   const isRecording = useTimelineStore((state) => state.isRecording);
   const [exportStatus, setExportStatus] = useState<'idle' | 'exporting' | 'success' | 'error'>('idle');
   const [mermaidExportStatus, setMermaidExportStatus] = useState<'idle' | 'exporting' | 'success' | 'error'>('idle');
+  const [resetStatus, setResetStatus] = useState<'idle' | 'resetting'>('idle');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -149,18 +150,20 @@ export function AppHeader({
   };
 
   const handleResetTrace = async () => {
-    if (eventCount === 0) return;
+    if (eventCount === 0 || resetStatus === 'resetting') return;
 
     const confirmed = window.confirm(
       'Reset trace and reload connections?\n\n' +
       'This will:\n' +
       '• Clear all recorded events\n' +
       '• Disconnect from all MCP servers\n' +
-      '• Start a new session\n\n' +
+      '• Reload the page with a fresh session\n\n' +
       'Your next query will reconnect to all currently enabled servers.'
     );
 
     if (confirmed) {
+      setResetStatus('resetting');
+
       try {
         // Disconnect from all MCP servers
         const response = await fetch('/api/mcp/connect-v2', {
@@ -174,10 +177,14 @@ export function AppHeader({
 
         // Clear UI state and start new session
         startNewSession();
+
+        // Reload page to ensure clean state (SSE reconnect, fresh UI)
+        window.location.reload();
       } catch (error) {
         console.error('Error during reset:', error);
-        // Still clear UI state even if disconnect failed
+        // Still clear state and reload even if disconnect failed
         startNewSession();
+        window.location.reload();
       }
     }
   };
@@ -261,22 +268,31 @@ export function AppHeader({
         {/* Reset Trace Button */}
         <button
           onClick={handleResetTrace}
-          disabled={eventCount === 0}
+          disabled={eventCount === 0 || resetStatus === 'resetting'}
           className={`
             flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all
-            ${eventCount === 0
+            ${eventCount === 0 || resetStatus === 'resetting'
               ? 'opacity-50 cursor-not-allowed'
               : 'hover:opacity-80 hover:shadow-md'
             }
           `}
           style={{
-            backgroundColor: eventCount === 0 ? '#a2a1a4' : '#d97171',
+            backgroundColor: eventCount === 0 || resetStatus === 'resetting' ? '#a2a1a4' : '#d97171',
             color: '#fdfdfa'
           }}
           title={eventCount === 0 ? 'No events to reset' : 'Clear events, disconnect servers, and start fresh'}
         >
-          <RefreshCw className="w-3.5 h-3.5" />
-          <span>Reset Trace</span>
+          {resetStatus === 'resetting' ? (
+            <>
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              <span>Resetting...</span>
+            </>
+          ) : (
+            <>
+              <RefreshCw className="w-3.5 h-3.5" />
+              <span>Reset Trace</span>
+            </>
+          )}
         </button>
 
         {/* Export Trace Button */}
