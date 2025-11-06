@@ -2,8 +2,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { MCPServerRecord } from '@/lib/storage/mcp-servers';
+import { useRouter } from 'next/navigation';
+import { ArrowLeft } from 'lucide-react';
 
 export default function MCPServersPage() {
+  const router = useRouter();
   const [servers, setServers] = useState<MCPServerRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -91,6 +94,13 @@ export default function MCPServersPage() {
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-8">
+          <button
+            onClick={() => router.push('/')}
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span className="text-sm font-medium">Back to Timeline</span>
+          </button>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">MCP Server Settings</h1>
           <p className="text-gray-600">
             Manage Model Context Protocol server configurations

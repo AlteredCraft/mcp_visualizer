@@ -11,9 +11,10 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useTimelineStore } from '@/store/timeline-store';
-import { Search, RefreshCw, Loader2, Check, X, Save, BarChart3 } from 'lucide-react';
+import { Search, RefreshCw, Loader2, Check, X, Save, BarChart3, Settings, Server } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 interface AppHeaderProps {
   /**
@@ -49,6 +50,7 @@ export function AppHeader({
   showControls = true,
   variant = 'dark',
 }: AppHeaderProps) {
+  const router = useRouter();
   const exportSession = useTimelineStore((state) => state.exportSession);
   const exportSessionAsMermaid = useTimelineStore((state) => state.exportSessionAsMermaid);
   const startNewSession = useTimelineStore((state) => state.startNewSession);
@@ -57,6 +59,24 @@ export function AppHeader({
   const isRecording = useTimelineStore((state) => state.isRecording);
   const [exportStatus, setExportStatus] = useState<'idle' | 'exporting' | 'success' | 'error'>('idle');
   const [mermaidExportStatus, setMermaidExportStatus] = useState<'idle' | 'exporting' | 'success' | 'error'>('idle');
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Click outside to close menu
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsMenuOpen(false);
+      }
+    }
+
+    if (isMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [isMenuOpen]);
 
   const handleExportTrace = () => {
     try {
@@ -163,6 +183,59 @@ export function AppHeader({
       {/* Controls Group */}
       {showControls && (
         <div className="flex items-center gap-3">
+        {/* Settings Menu */}
+        <div className="relative" ref={menuRef}>
+          <button
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className={`
+              flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all
+              hover:opacity-80 hover:shadow-md
+            `}
+            style={{
+              backgroundColor: '#7671d4',
+              color: '#fdfdfa'
+            }}
+            title="Settings"
+          >
+            <Settings className="w-3.5 h-3.5" />
+            <span>Settings</span>
+          </button>
+
+          {/* Dropdown Menu */}
+          {isMenuOpen && (
+            <div
+              className="absolute right-0 mt-2 w-56 rounded-lg shadow-lg overflow-hidden z-50"
+              style={{
+                backgroundColor: variant === 'dark' ? '#1e293b' : '#ffffff',
+                border: `1px solid ${variant === 'dark' ? '#334155' : '#e5e7eb'}`
+              }}
+            >
+              <div className="py-1">
+                <button
+                  onClick={() => {
+                    setIsMenuOpen(false);
+                    router.push('/settings/servers');
+                  }}
+                  className={`
+                    w-full text-left px-4 py-2.5 text-sm flex items-center gap-3 transition-colors
+                    ${variant === 'dark'
+                      ? 'text-gray-200 hover:bg-slate-700'
+                      : 'text-gray-700 hover:bg-gray-100'
+                    }
+                  `}
+                >
+                  <Server className="w-4 h-4" />
+                  <div>
+                    <div className="font-medium">Server Configuration</div>
+                    <div className={`text-xs ${variant === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                      Manage MCP servers
+                    </div>
+                  </div>
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
         {/* Reset Trace Button */}
         <button
           onClick={handleResetTrace}
