@@ -45,7 +45,9 @@ type EventCallback = (event: TimelineEvent) => void;
  * - Lifecycle management (startup, shutdown, cleanup)
  */
 export class MCPGlobalClient {
-  private client: MCPClient;
+  private clients: Map<string, MCPClient>; // serverId -> MCPClient
+  private serverConfigs: Map<string, MCPServerConfig>; // serverId -> config
+  private toolToServerMap: Map<string, string>; // toolName -> serverId
   private subscribers: Map<string, EventCallback>;
   private eventBuffer: TimelineEvent[];
   private maxBufferSize = 100;
@@ -53,7 +55,9 @@ export class MCPGlobalClient {
   private currentSequence = 0;
 
   constructor() {
-    this.client = new MCPClient();
+    this.clients = new Map();
+    this.serverConfigs = new Map();
+    this.toolToServerMap = new Map();
     this.subscribers = new Map();
     this.eventBuffer = [];
     this.currentSessionId = this.generateSessionId();
@@ -169,82 +173,203 @@ export class MCPGlobalClient {
 
   /**
    * Get current connection state.
+   * Returns the state of the first connected server, or disconnected if none.
    */
   public getConnectionState(): ConnectionState {
-    return this.client.getConnectionState();
+    for (const client of this.clients.values()) {
+      const state = client.getConnectionState();
+      if (state.status === 'connected') {
+        return state;
+      }
+    }
+    return { status: 'disconnected' };
   }
 
   /**
-   * Check if client is connected.
+   * Check if any client is connected.
    */
   public isConnected(): boolean {
-    return this.client.isConnected();
+    for (const client of this.clients.values()) {
+      if (client.isConnected()) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /**
-   * Connect to MCP server (lazy initialization).
+   * Get connection states for all servers.
+   */
+  public getAllConnectionStates(): Map<string, ConnectionState> {
+    const states = new Map<string, ConnectionState>();
+    for (const [serverId, client] of this.clients.entries()) {
+      states.set(serverId, client.getConnectionState());
+    }
+    return states;
+  }
+
+  /**
+   * Connect to a single MCP server.
    *
-   * This method is idempotent - calling it multiple times won't create
-   * multiple connections. If already connected, it returns immediately.
+   * This method is idempotent - calling it multiple times for the same server
+   * won't create multiple connections.
    */
   public async connect(config: MCPServerConfig): Promise<void> {
-    if (this.isConnected()) {
-      console.log('[MCPGlobalClient] Already connected, skipping initialization');
+    const serverId = config.id || 'default';
+
+    // Check if already connected to this server
+    if (this.clients.has(serverId)) {
+      console.log(`[MCPGlobalClient] Already connected to ${serverId}, skipping`);
       return;
     }
 
     console.log(
-      `[MCPGlobalClient] Connecting to: ${config.command} ${config.args.join(' ')}`
+      `[MCPGlobalClient] Connecting to ${serverId}: ${config.command} ${config.args.join(' ')}`
     );
 
-    await this.client.connect(config);
+    const client = new MCPClient();
+    await client.connect(config);
 
-    console.log('[MCPGlobalClient] Connection established');
+    this.clients.set(serverId, client);
+    this.serverConfigs.set(serverId, config);
+
+    console.log(`[MCPGlobalClient] Connected to ${serverId}`);
   }
 
   /**
-   * List available tools from connected server.
+   * Connect to multiple MCP servers in parallel.
+   *
+   * This is more efficient than calling connect() multiple times sequentially.
+   */
+  public async connectToMultipleServers(configs: MCPServerConfig[]): Promise<void> {
+    console.log(`[MCPGlobalClient] Connecting to ${configs.length} servers...`);
+
+    const connectionPromises = configs.map(async (config) => {
+      try {
+        await this.connect(config);
+      } catch (error) {
+        console.error(
+          `[MCPGlobalClient] Failed to connect to ${config.id || config.command}:`,
+          error
+        );
+        // Continue with other connections even if one fails
+      }
+    });
+
+    await Promise.all(connectionPromises);
+
+    const connectedCount = this.clients.size;
+    console.log(`[MCPGlobalClient] Connected to ${connectedCount}/${configs.length} servers`);
+  }
+
+  /**
+   * List available tools from all connected servers.
+   *
+   * Tools are aggregated from all servers and tagged with their source server.
    */
   public async listTools(): Promise<MCPTool[]> {
-    return await this.client.listTools();
+    const allTools: MCPTool[] = [];
+
+    for (const [serverId, client] of this.clients.entries()) {
+      try {
+        const tools = await client.listTools();
+        const serverName = this.serverConfigs.get(serverId)?.name || serverId;
+
+        // Tag each tool with its server and add to mapping
+        for (const tool of tools) {
+          const taggedTool: MCPTool = {
+            ...tool,
+            serverId,
+            serverName,
+          };
+          allTools.push(taggedTool);
+
+          // Build tool-to-server mapping for routing
+          this.toolToServerMap.set(tool.name, serverId);
+        }
+      } catch (error) {
+        console.error(
+          `[MCPGlobalClient] Failed to list tools from ${serverId}:`,
+          error
+        );
+        // Continue with other servers even if one fails
+      }
+    }
+
+    return allTools;
   }
 
   /**
-   * Call a tool on the connected server.
+   * Call a tool on the appropriate connected server.
+   *
+   * Uses the tool-to-server mapping to route the call to the correct server.
    */
   public async callTool(
     toolName: string,
     args: Record<string, unknown>
   ): Promise<MCPToolResult> {
-    return await this.client.callTool(toolName, args);
+    // Find which server has this tool
+    const serverId = this.toolToServerMap.get(toolName);
+
+    if (!serverId) {
+      throw new Error(
+        `Tool "${toolName}" not found in any connected server. ` +
+        `Available tools: ${Array.from(this.toolToServerMap.keys()).join(', ')}`
+      );
+    }
+
+    const client = this.clients.get(serverId);
+    if (!client) {
+      throw new Error(
+        `Server "${serverId}" not connected (expected to have tool "${toolName}")`
+      );
+    }
+
+    return await client.callTool(toolName, args);
   }
 
   /**
-   * Disconnect from server and clean up resources.
+   * Disconnect from all servers and clean up resources.
    *
    * Called by graceful shutdown handlers or manually.
    */
   public async disconnect(): Promise<void> {
-    console.log('[MCPGlobalClient] Disconnecting...');
+    console.log('[MCPGlobalClient] Disconnecting from all servers...');
 
     // Close all SSE subscriptions
     const subscriberCount = this.subscribers.size;
     this.subscribers.clear();
     console.log(`[MCPGlobalClient] Closed ${subscriberCount} SSE subscriptions`);
 
-    // Disconnect MCP client
-    await this.client.disconnect();
+    // Disconnect all MCP clients
+    const disconnectPromises = Array.from(this.clients.entries()).map(
+      async ([serverId, client]) => {
+        try {
+          await client.disconnect();
+          console.log(`[MCPGlobalClient] Disconnected from ${serverId}`);
+        } catch (error) {
+          console.error(`[MCPGlobalClient] Error disconnecting ${serverId}:`, error);
+        }
+      }
+    );
 
-    console.log('[MCPGlobalClient] Disconnected');
+    await Promise.all(disconnectPromises);
+
+    // Clear all maps
+    this.clients.clear();
+    this.serverConfigs.clear();
+    this.toolToServerMap.clear();
+
+    console.log('[MCPGlobalClient] All servers disconnected');
   }
 
   /**
-   * Reconnect after error.
+   * Reconnect to all servers after error.
    *
    * Resets session and sequence numbers.
    */
-  public async reconnect(config: MCPServerConfig): Promise<void> {
-    console.log('[MCPGlobalClient] Reconnecting...');
+  public async reconnect(configs: MCPServerConfig[]): Promise<void> {
+    console.log('[MCPGlobalClient] Reconnecting to all servers...');
 
     // Disconnect first
     await this.disconnect();
@@ -253,8 +378,8 @@ export class MCPGlobalClient {
     this.currentSessionId = this.generateSessionId();
     this.currentSequence = 0;
 
-    // Reconnect
-    await this.connect(config);
+    // Reconnect to all servers
+    await this.connectToMultipleServers(configs);
   }
 
   /**
@@ -266,6 +391,8 @@ export class MCPGlobalClient {
     subscribers: number;
     bufferSize: number;
     connected: boolean;
+    connectedServers: string[];
+    totalTools: number;
   } {
     return {
       sessionId: this.currentSessionId,
@@ -273,6 +400,8 @@ export class MCPGlobalClient {
       subscribers: this.subscribers.size,
       bufferSize: this.eventBuffer.length,
       connected: this.isConnected(),
+      connectedServers: Array.from(this.clients.keys()),
+      totalTools: this.toolToServerMap.size,
     };
   }
 }

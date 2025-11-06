@@ -100,13 +100,13 @@ export async function executeWorkflow(
       }
     });
 
-    // Connect to MCP server if not already connected
+    // Connect to MCP servers if not already connected
     if (!mcpClient.isConnected()) {
       mcpClient.recordEvent({
         eventType: 'console_log',
         actor: 'host_app',
         logLevel: 'info',
-        logMessage: 'Connecting to MCP server...',
+        logMessage: 'Connecting to MCP servers...',
         badgeType: 'SYSTEM',
         metadata: {
           phase: 'initialization',
@@ -114,34 +114,38 @@ export async function executeWorkflow(
         }
       });
 
-      // Get first enabled server from storage
+      // Get ALL enabled servers from storage
       const servers = await mcpServerStorage.findEnabled();
       if (servers.length === 0) {
         throw new Error('No enabled MCP servers found in storage');
       }
 
-      const server = servers[0];
-      const config = toMCPServerConfig(server);
+      // Convert all server records to configs
+      const configs = servers.map(toMCPServerConfig);
 
+      // Log which servers we're connecting to
       mcpClient.recordEvent({
         eventType: 'console_log',
         actor: 'host_app',
         logLevel: 'info',
-        logMessage: `Using server: ${server.name}`,
+        logMessage: `Connecting to ${servers.length} server(s): ${servers.map(s => s.name).join(', ')}`,
         badgeType: 'SYSTEM',
         metadata: {
           phase: 'initialization',
-          messageType: 'server_selected'
+          messageType: 'servers_selected',
+          serverCount: servers.length,
+          serverNames: servers.map(s => s.name)
         }
       });
 
-      await mcpClient.connect(config);
+      // Connect to all servers in parallel
+      await mcpClient.connectToMultipleServers(configs);
 
       mcpClient.recordEvent({
         eventType: 'console_log',
         actor: 'host_app',
         logLevel: 'info',
-        logMessage: 'Handshake complete',
+        logMessage: 'Handshake complete for all servers',
         badgeType: 'SYSTEM',
         metadata: {
           phase: 'initialization',
@@ -153,7 +157,7 @@ export async function executeWorkflow(
         eventType: 'console_log',
         actor: 'host_app',
         logLevel: 'info',
-        logMessage: 'Using existing MCP connection',
+        logMessage: 'Using existing MCP connections',
         badgeType: 'SYSTEM',
         metadata: {
           phase: 'initialization',
