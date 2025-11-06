@@ -10,15 +10,21 @@ import { PayloadModal } from '../ui/PayloadModal';
  *
  * Displays protocol messages in communication lanes with expand/collapse functionality.
  *
+ * Layout Structure (Vertical Stack):
+ * 1. Badge Row: Type badge (REQUEST/RESPONSE/NOTIFICATION) with direction arrow
+ * 2. Content Row: Method name (primary content, break-words for long names)
+ * 3. Metadata Row: Sequence number and timing info (if applicable)
+ * 4. Footer Row: Click to expand hint (separated by border)
+ *
  * Visual Indicators:
- * - REQUEST: Green left border (#10B981), sequence number (#1, #2), arrow →
- * - RESPONSE: Blue right border (#3B82F6), timing info (e.g., "33ms"), arrow ←
- * - NOTIFICATION: Purple left border (#8b5cf6), no sequence number, arrow →
+ * - REQUEST: Purple left border, sequence number, arrow →
+ * - RESPONSE: Gray right border, timing info (e.g., "33ms"), arrow ←
+ * - NOTIFICATION: Purple left border, no sequence number, arrow →
+ * - ERROR: Red border on all sides
  *
  * Interaction:
- * - Collapsed: Shows method name, sequence, direction, expand button { }
- * - Expanded: Shows full JSON payload with syntax highlighting
- * - Click anywhere on card to toggle
+ * - Click anywhere on card to open payload modal
+ * - Hover: Subtle elevation and shadow
  */
 
 interface MessageCardProps {
@@ -78,42 +84,39 @@ export function MessageCard({ card, onToggle }: MessageCardProps) {
       className="cursor-pointer transition-all duration-150 hover:shadow-lg hover:-translate-y-0.5"
       style={getBorderStyle()}
     >
-      <div className="bg-white rounded p-3">
-        {/* Header */}
-        <div className="flex items-start justify-between mb-2">
-          <div className="flex items-center gap-2">
-            {/* Badge */}
-            <span className="px-2 py-0.5 text-xs font-semibold bg-gray-100 text-gray-700 rounded">
-              {getBadgeLabel()}
-            </span>
-
-            {/* Method name */}
-            <span className="text-sm font-mono font-medium text-gray-900">
-              {card.method}
-            </span>
-
-            {/* Sequence number (for requests and responses) */}
-            {card.sequence !== undefined && (
-              <span className="text-xs text-gray-500 font-mono">
-                #{card.sequence}
-              </span>
-            )}
-          </div>
-
-          {/* Arrow and timing */}
-          <div className="flex items-center gap-2">
-            {getTimingDisplay() && (
-              <span className="text-xs text-gray-500 font-mono">
-                {getTimingDisplay()}
-              </span>
-            )}
-            <span className="text-lg text-gray-400">{getArrowIndicator()}</span>
-          </div>
+      <div className="bg-white rounded p-3 space-y-2">
+        {/* Badge Row with Arrow */}
+        <div className="flex items-center justify-between">
+          <span className="px-2 py-0.5 text-xs font-semibold bg-gray-100 text-gray-700 rounded uppercase">
+            {getBadgeLabel()}
+          </span>
+          <span className="text-base text-gray-400 font-bold">{getArrowIndicator()}</span>
         </div>
 
-        {/* Click to view hint */}
-        <div className="flex items-center gap-2 text-xs text-gray-500">
-          <span className="font-mono">{ }</span>
+        {/* Method Name - Primary Content */}
+        <div className="text-sm font-mono font-medium text-gray-900 break-words">
+          {card.method}
+        </div>
+
+        {/* Metadata Row - Sequence and Timing */}
+        {(card.sequence !== undefined || getTimingDisplay()) && (
+          <div className="flex items-center gap-3 text-xs text-gray-500">
+            {card.sequence !== undefined && (
+              <span className="font-mono">
+                <span className="text-gray-400">seq:</span> #{card.sequence}
+              </span>
+            )}
+            {getTimingDisplay() && (
+              <span className="font-mono">
+                <span className="text-gray-400">⏱</span> {getTimingDisplay()}
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Click to expand hint */}
+        <div className="flex items-center gap-2 text-xs text-gray-400 border-t border-gray-100 pt-2">
+          <span className="font-mono text-gray-300">{ }</span>
           <span>Click to expand payload</span>
         </div>
       </div>
