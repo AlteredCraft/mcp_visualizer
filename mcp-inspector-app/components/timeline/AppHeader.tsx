@@ -148,15 +148,37 @@ export function AppHeader({
     }
   };
 
-  const handleResetTrace = () => {
+  const handleResetTrace = async () => {
     if (eventCount === 0) return;
 
     const confirmed = window.confirm(
-      'Are you sure you want to reset the trace? This will clear all recorded events and start a new session.'
+      'Reset trace and reload connections?\n\n' +
+      'This will:\n' +
+      '• Clear all recorded events\n' +
+      '• Disconnect from all MCP servers\n' +
+      '• Start a new session\n\n' +
+      'Your next query will reconnect to all currently enabled servers.'
     );
 
     if (confirmed) {
-      startNewSession();
+      try {
+        // Disconnect from all MCP servers
+        const response = await fetch('/api/mcp/connect-v2', {
+          method: 'DELETE',
+        });
+
+        if (!response.ok) {
+          console.warn('Failed to disconnect MCP servers:', await response.text());
+          // Continue anyway - the user wants to reset
+        }
+
+        // Clear UI state and start new session
+        startNewSession();
+      } catch (error) {
+        console.error('Error during reset:', error);
+        // Still clear UI state even if disconnect failed
+        startNewSession();
+      }
     }
   };
 
@@ -251,7 +273,7 @@ export function AppHeader({
             backgroundColor: eventCount === 0 ? '#a2a1a4' : '#d97171',
             color: '#fdfdfa'
           }}
-          title={eventCount === 0 ? 'No events to reset' : 'Clear all events and start a new session'}
+          title={eventCount === 0 ? 'No events to reset' : 'Clear events, disconnect servers, and start fresh'}
         >
           <RefreshCw className="w-3.5 h-3.5" />
           <span>Reset Trace</span>
