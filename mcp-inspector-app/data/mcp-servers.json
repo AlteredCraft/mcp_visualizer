@@ -12,9 +12,9 @@
         "FASTMCP_LOG_LEVEL": "ERROR",
         "AWS_DOCUMENTATION_PARTITION": "aws"
       },
-      "enabled": false,
+      "enabled": true,
       "createdAt": "2025-01-01T00:00:00.000Z",
-      "updatedAt": "2025-11-03T22:02:41.386Z",
+      "updatedAt": "2025-11-06T17:02:06.540Z",
       "metadata": {
         "expectedTools": [
           {
