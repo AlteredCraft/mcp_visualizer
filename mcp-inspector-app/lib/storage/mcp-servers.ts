@@ -35,6 +35,8 @@ interface MCPServersData {
  */
 export function toMCPServerConfig(record: MCPServerRecord): MCPServerConfig {
   return {
+    id: record.id,
+    name: record.name,
     command: record.command,
     args: record.args,
     env: record.env,

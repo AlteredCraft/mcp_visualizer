@@ -15,6 +15,8 @@ export interface MCPTool {
   name: string;
   description: string;
   inputSchema: Record<string, unknown>; // JSON Schema format
+  serverId?: string; // Which server provides this tool (for multi-server support)
+  serverName?: string; // Display name of server providing this tool
 }
 
 export interface MCPToolCallParams {
@@ -60,6 +62,8 @@ export interface MCPToolResult {
 // ============================================================================
 
 export interface MCPServerConfig {
+  id?: string; // Server identifier for multi-server support
+  name?: string; // Server display name
   command: string;
   args: string[];
   env?: Record<string, string>;

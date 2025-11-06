@@ -59,6 +59,7 @@ export function AppHeader({
   const isRecording = useTimelineStore((state) => state.isRecording);
   const [exportStatus, setExportStatus] = useState<'idle' | 'exporting' | 'success' | 'error'>('idle');
   const [mermaidExportStatus, setMermaidExportStatus] = useState<'idle' | 'exporting' | 'success' | 'error'>('idle');
+  const [resetStatus, setResetStatus] = useState<'idle' | 'resetting'>('idle');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -148,15 +149,44 @@ export function AppHeader({
     }
   };
 
-  const handleResetTrace = () => {
-    if (eventCount === 0) return;
+  const handleResetTrace = async () => {
+    if (eventCount === 0 || resetStatus === 'resetting') return;
 
     const confirmed = window.confirm(
-      'Are you sure you want to reset the trace? This will clear all recorded events and start a new session.'
+      'Start a new session?\n\n' +
+      'This will:\n' +
+      '• Clear all recorded events\n' +
+      '• Disconnect from all MCP servers\n' +
+      '• Reload the page with a fresh session\n\n' +
+      'Your next query will reconnect to all currently enabled servers.'
     );
 
     if (confirmed) {
-      startNewSession();
+      setResetStatus('resetting');
+
+      try {
+        // Disconnect from all MCP servers and clear session state
+        // This clears the event buffer on the server-side singleton
+        const response = await fetch('/api/mcp/connect-v2?clearSession=true', {
+          method: 'DELETE',
+        });
+
+        if (!response.ok) {
+          console.warn('Failed to disconnect MCP servers:', await response.text());
+          // Continue anyway - the user wants to start fresh
+        }
+
+        // Reload page to reset all state layers:
+        // 1. Server-side: Already cleared above
+        // 2. SSE connection: Closes and reconnects
+        // 3. Client-side: Zustand store resets to initial state
+        // Note: We don't call startNewSession() here because page reload handles it
+        window.location.reload();
+      } catch (error) {
+        console.error('Error during session reset:', error);
+        // Even if disconnect failed, reload to ensure clean state
+        window.location.reload();
+      }
     }
   };
 
@@ -236,25 +266,34 @@ export function AppHeader({
             </div>
           )}
         </div>
-        {/* Reset Trace Button */}
+        {/* Start New Session Button */}
         <button
           onClick={handleResetTrace}
-          disabled={eventCount === 0}
+          disabled={eventCount === 0 || resetStatus === 'resetting'}
           className={`
             flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all
-            ${eventCount === 0
+            ${eventCount === 0 || resetStatus === 'resetting'
               ? 'opacity-50 cursor-not-allowed'
               : 'hover:opacity-80 hover:shadow-md'
             }
           `}
           style={{
-            backgroundColor: eventCount === 0 ? '#a2a1a4' : '#d97171',
+            backgroundColor: eventCount === 0 || resetStatus === 'resetting' ? '#a2a1a4' : '#d97171',
             color: '#fdfdfa'
           }}
-          title={eventCount === 0 ? 'No events to reset' : 'Clear all events and start a new session'}
+          title={eventCount === 0 ? 'No events recorded yet' : 'Start a new session (clears all events and reconnects)'}
         >
-          <RefreshCw className="w-3.5 h-3.5" />
-          <span>Reset Trace</span>
+          {resetStatus === 'resetting' ? (
+            <>
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              <span>Starting...</span>
+            </>
+          ) : (
+            <>
+              <RefreshCw className="w-3.5 h-3.5" />
+              <span>Start New Session</span>
+            </>
+          )}
         </button>
 
         {/* Export Trace Button */}
